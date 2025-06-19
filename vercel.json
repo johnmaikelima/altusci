@@ -1,8 +1,9 @@
 {
   "version": 2,
-  "buildCommand": "npm run build || true",
+  "buildCommand": "npm run build",
   "installCommand": "npm install",
   "framework": "nextjs",
+  "outputDirectory": ".next",
   "routes": [
     {
       "src": "/api/(.*)",
