@@ -3,6 +3,10 @@ import { connectToDatabase } from '@/lib/mongoose';
 import PostModel from '@/models/post';
 import { serializeMongoDBObject } from '@/lib/mongodb-helpers';
 
+// Configuração para indicar que esta rota é dinâmica
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+
 // GET /api/posts/search - Buscar posts pelo título
 export async function GET(request: NextRequest) {
   try {

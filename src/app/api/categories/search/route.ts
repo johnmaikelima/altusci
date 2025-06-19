@@ -3,6 +3,10 @@ import { connectToDatabase } from '@/lib/mongoose';
 import CategoryModel from '@/models/category';
 import { serializeMongoDBObject } from '@/lib/mongodb-helpers';
 
+// Configuração para indicar que esta rota é dinâmica
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+
 // GET /api/categories/search - Buscar categorias pelo nome
 export async function GET(request: NextRequest) {
   try {
