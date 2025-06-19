@@ -8,6 +8,10 @@ import BlogSettingsModel from '@/models/blog-settings';
 import PageModel from '@/models/page';
 import { redirect } from 'next/navigation';
 
+// Configurações para forçar renderização dinâmica e resolver problemas de build
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+
 // Desabilitar cache para garantir que sempre tenhamos os dados mais recentes
 export const revalidate = 0; // Isso força o Next.js a revalidar a página a cada requisição
 

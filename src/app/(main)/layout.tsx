@@ -6,6 +6,10 @@ import { connectToDatabase } from '@/lib/mongoose';
 import CategoryModel from '@/models/category';
 import BlogSettingsModel from '@/models/blog-settings';
 
+// Configurações para forçar renderização dinâmica e resolver problemas de build
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+
 // Interfaces para tipagem
 interface MenuItem {
   _id: string;
