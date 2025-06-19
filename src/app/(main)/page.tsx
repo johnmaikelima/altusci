@@ -7,6 +7,8 @@ import CategoryModel from '@/models/category';
 import BlogSettingsModel from '@/models/blog-settings';
 import PageModel from '@/models/page';
 import { redirect } from 'next/navigation';
+// Importar o componente cliente para garantir que o manifesto seja gerado corretamente
+import MainPageClient from './page.client';
 
 // Configurações para forçar renderização dinâmica e resolver problemas de build
 export const dynamic = 'force-dynamic';
@@ -135,7 +137,9 @@ export default async function Home() {
   ]);
 
   return (
-    <div className="container mx-auto px-4 bg-white w-full">
+    <div className="w-full">
+      {/* Componente cliente para garantir que o manifesto seja gerado corretamente */}
+      <MainPageClient />
       {/* Hero Section */}
       <section className="py-16 md:py-24">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
