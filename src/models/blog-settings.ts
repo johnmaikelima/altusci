@@ -1,5 +1,18 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
+export interface MenuItem {
+  name: string;
+  url: string;
+  order: number;
+  isCTA?: boolean;
+}
+
+export interface Menu {
+  name: string;
+  location: string; // 'header', 'footer', 'sidebar', etc.
+  items: MenuItem[];
+}
+
 export interface IBlogSettings extends Document {
   name: string;
   description: string;
@@ -10,6 +23,14 @@ export interface IBlogSettings extends Document {
   contactEmail: string;
   contactPhone: string;
   contactWhatsapp: string;
+  address: {
+    street: string;
+    number: string;
+    city: string;
+    state: string;
+    country: string;
+    zipCode: string;
+  };
   socialMedia: {
     facebook: string;
     twitter: string;
@@ -17,6 +38,15 @@ export interface IBlogSettings extends Document {
     linkedin: string;
     youtube: string;
   };
+  homePage: {
+    type: string; // 'default', 'page', 'category', 'post'
+    id: string; // ID do objeto selecionado (página, categoria ou post)
+    slug: string; // Slug do objeto selecionado
+    title: string; // Título do objeto selecionado
+  };
+  menus: Menu[];
+  // Manter o campo antigo para compatibilidade com código existente
+  legacyMenuItems: MenuItem[];
   createdAt: Date;
   updatedAt: Date;
 }
@@ -29,6 +59,25 @@ const BlogSettingsSchema: Schema = new Schema(
       trim: true,
       maxlength: [100, 'O nome não pode ter mais de 100 caracteres'],
       default: 'Meu Blog'
+    },
+    homePage: {
+      type: {
+        type: String,
+        enum: ['default', 'page', 'category', 'post'],
+        default: 'default'
+      },
+      id: {
+        type: String,
+        default: ''
+      },
+      slug: {
+        type: String,
+        default: ''
+      },
+      title: {
+        type: String,
+        default: ''
+      }
     },
     description: {
       type: String,
@@ -64,6 +113,32 @@ const BlogSettingsSchema: Schema = new Schema(
       type: String,
       default: ''
     },
+    address: {
+      street: {
+        type: String,
+        default: ''
+      },
+      number: {
+        type: String,
+        default: ''
+      },
+      city: {
+        type: String,
+        default: ''
+      },
+      state: {
+        type: String,
+        default: ''
+      },
+      country: {
+        type: String,
+        default: ''
+      },
+      zipCode: {
+        type: String,
+        default: ''
+      }
+    },
     socialMedia: {
       facebook: {
         type: String,
@@ -85,7 +160,63 @@ const BlogSettingsSchema: Schema = new Schema(
         type: String,
         default: ''
       }
-    }
+    },
+    menus: [
+      {
+        name: {
+          type: String,
+          required: true,
+          trim: true
+        },
+        location: {
+          type: String,
+          required: true,
+          enum: ['header', 'footer', 'sidebar', 'mobile'],
+          default: 'header'
+        },
+        items: [
+          {
+            name: {
+              type: String,
+              required: true,
+              trim: true
+            },
+            url: {
+              type: String,
+              required: true,
+              trim: true
+            },
+            order: {
+              type: Number,
+              default: 0
+            },
+            isCTA: {
+              type: Boolean,
+              default: false
+            }
+          }
+        ]
+      }
+    ],
+    // Campo legado para compatibilidade com código existente
+    legacyMenuItems: [
+      {
+        name: {
+          type: String,
+          required: true,
+          trim: true
+        },
+        url: {
+          type: String,
+          required: true,
+          trim: true
+        },
+        order: {
+          type: Number,
+          default: 0
+        }
+      }
+    ]
   },
   {
     timestamps: true,

@@ -15,6 +15,7 @@ export interface Post {
   };
   tags: string[];
   category: string;
+  categoryName?: string;
   coverImage?: string;
 }
 

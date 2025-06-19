@@ -6,9 +6,10 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'react-hot-toast';
-import { Save, Upload, Loader2 } from 'lucide-react';
+import { Save, Upload, Loader2, Search, Home } from 'lucide-react';
 import Image from 'next/image';
 import InputMask from 'react-input-mask';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 
 interface BlogSettings {
   name: string;
@@ -23,6 +24,16 @@ interface BlogSettings {
   contactPhone: string;
   contactWhatsapp: string;
   
+  // Endereço
+  address: {
+    street: string;
+    number: string;
+    city: string;
+    state: string;
+    country: string;
+    zipCode: string;
+  };
+  
   // Redes sociais
   socialMedia: {
     facebook: string;
@@ -30,6 +41,14 @@ interface BlogSettings {
     instagram: string;
     linkedin: string;
     youtube: string;
+  };
+  
+  // Página inicial
+  homePage: {
+    type: string; // 'default', 'page', 'category', 'post'
+    id: string;
+    slug: string;
+    title: string;
   };
 }
 
@@ -44,18 +63,35 @@ export default function GeneralSettingsPage() {
     contactEmail: '',
     contactPhone: '',
     contactWhatsapp: '',
+    address: {
+      street: '',
+      number: '',
+      city: '',
+      state: '',
+      country: '',
+      zipCode: ''
+    },
     socialMedia: {
       facebook: '',
       twitter: '',
       instagram: '',
       linkedin: '',
       youtube: ''
+    },
+    homePage: {
+      type: 'default',
+      id: '',
+      slug: '',
+      title: ''
     }
   });
   
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<{id: string, title: string, slug: string, type: string}[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Carregar configurações ao montar o componente
@@ -68,7 +104,36 @@ export default function GeneralSettingsPage() {
           throw new Error('Erro ao carregar configurações');
         }
         const data = await response.json();
-        setSettings(data);
+        
+        // Verificar se os dados estão no formato esperado e extrair settings
+        if (data.success && data.settings) {
+          // Garantir que homePage existe
+          const settingsData = {
+            ...data.settings,
+            homePage: data.settings.homePage || {
+              type: 'default',
+              id: '',
+              slug: '',
+              title: ''
+            }
+          };
+          setSettings(settingsData);
+        } else {
+          // Se os dados não estiverem no formato esperado, usar diretamente
+          // Garantir que homePage existe
+          const settingsData = {
+            ...data,
+            homePage: data.homePage || {
+              type: 'default',
+              id: '',
+              slug: '',
+              title: ''
+            }
+          };
+          setSettings(settingsData);
+        }
+        
+        console.log('Dados carregados:', data);
       } catch (error) {
         console.error('Erro ao carregar configurações:', error);
         toast.error('Não foi possível carregar as configurações do blog');
@@ -161,7 +226,7 @@ export default function GeneralSettingsPage() {
   // Função para atualizar campos de redes sociais
   const handleSocialMediaChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    const socialField = name.split('.')[1]; // Extrair o nome do campo após o ponto
+    const socialField = name.split('.')[1]; // Ex: socialMedia.facebook -> facebook
     
     setSettings(prev => ({
       ...prev,
@@ -170,6 +235,103 @@ export default function GeneralSettingsPage() {
         [socialField]: value
       }
     }));
+  };
+  
+  // Função para atualizar campos de endereço
+  const handleAddressChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    const field = name.split('.')[1]; // Ex: address.street -> street
+    
+    setSettings(prev => ({
+      ...prev,
+      address: {
+        ...prev.address,
+        [field]: value
+      }
+    }));
+  };
+
+  // Função para atualizar o tipo de página inicial
+  const handleHomePageTypeChange = (value: string) => {
+    setSettings(prev => {
+      // Garantir que homePage existe
+      const currentHomePage = prev.homePage || {
+        type: 'default',
+        id: '',
+        slug: '',
+        title: ''
+      };
+      
+      return {
+        ...prev,
+        homePage: {
+          ...currentHomePage,
+          type: value,
+          // Resetar os outros valores quando mudar o tipo
+          id: value === 'default' ? '' : currentHomePage.id,
+          slug: value === 'default' ? '' : currentHomePage.slug,
+          title: value === 'default' ? '' : currentHomePage.title
+        }
+      };
+    });
+    
+    // Limpar resultados de busca ao mudar o tipo
+    setSearchResults([]);
+    setSearchQuery('');
+  };
+
+  // Função para buscar páginas, posts ou categorias
+  const handleSearch = async () => {
+    if (!searchQuery.trim() || !settings.homePage.type || settings.homePage.type === 'default') return;
+    
+    setIsSearching(true);
+    try {
+      let endpoint = '';
+      
+      switch (settings.homePage.type) {
+        case 'page':
+          endpoint = '/api/pages/search?q=' + encodeURIComponent(searchQuery);
+          break;
+        case 'post':
+          endpoint = '/api/posts/search?q=' + encodeURIComponent(searchQuery);
+          break;
+        case 'category':
+          endpoint = '/api/categories/search?q=' + encodeURIComponent(searchQuery);
+          break;
+      }
+      
+      const response = await fetch(endpoint);
+      if (!response.ok) throw new Error('Falha na busca');
+      
+      const data = await response.json();
+      setSearchResults(data.results.map((item: any) => ({
+        id: item._id || item.id,
+        title: item.title || item.name,
+        slug: item.slug,
+        type: settings.homePage.type
+      })));
+    } catch (error) {
+      console.error('Erro na busca:', error);
+      toast.error('Erro ao buscar conteúdo');
+      setSearchResults([]);
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  // Função para selecionar um item como página inicial
+  const handleSelectHomePageItem = (item: {id: string, title: string, slug: string, type: string}) => {
+    setSettings(prev => ({
+      ...prev,
+      homePage: {
+        ...prev.homePage,
+        id: item.id,
+        slug: item.slug,
+        title: item.title
+      }
+    }));
+    
+    toast.success(`${item.title} definido como página inicial`);
   };
 
   if (isLoading) {
@@ -185,7 +347,107 @@ export default function GeneralSettingsPage() {
     <div className="container mx-auto py-6">
       <h1 className="text-2xl font-bold mb-6">Configurações Gerais</h1>
       
-      <div className="grid gap-6">
+      <div className="grid grid-cols-1 gap-6 mb-6">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Home className="h-5 w-5" />
+              Página Inicial
+            </CardTitle>
+            <CardDescription>
+              Configure qual conteúdo será exibido como página inicial do seu site
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="space-y-4">
+              <Label>Tipo de página inicial</Label>
+              <RadioGroup 
+                value={settings.homePage?.type || 'default'} 
+                onValueChange={handleHomePageTypeChange}
+                className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4"
+              >
+                <div className="flex items-center space-x-2 border rounded-md p-4 hover:bg-gray-50">
+                  <RadioGroupItem value="default" id="default" />
+                  <Label htmlFor="default" className="cursor-pointer flex-1">Padrão</Label>
+                </div>
+                <div className="flex items-center space-x-2 border rounded-md p-4 hover:bg-gray-50">
+                  <RadioGroupItem value="page" id="page" />
+                  <Label htmlFor="page" className="cursor-pointer flex-1">Página</Label>
+                </div>
+                <div className="flex items-center space-x-2 border rounded-md p-4 hover:bg-gray-50">
+                  <RadioGroupItem value="post" id="post" />
+                  <Label htmlFor="post" className="cursor-pointer flex-1">Post</Label>
+                </div>
+                <div className="flex items-center space-x-2 border rounded-md p-4 hover:bg-gray-50">
+                  <RadioGroupItem value="category" id="category" />
+                  <Label htmlFor="category" className="cursor-pointer flex-1">Categoria</Label>
+                </div>
+              </RadioGroup>
+            </div>
+            
+            {settings.homePage.type !== 'default' && (
+              <div className="space-y-4">
+                <div className="flex flex-col space-y-2">
+                  <Label htmlFor="searchContent">Buscar {settings.homePage.type === 'page' ? 'página' : settings.homePage.type === 'post' ? 'post' : 'categoria'}</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      id="searchContent"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      placeholder={`Digite para buscar ${settings.homePage.type === 'page' ? 'páginas' : settings.homePage.type === 'post' ? 'posts' : 'categorias'}`}
+                      className="flex-1"
+                    />
+                    <Button 
+                      onClick={handleSearch} 
+                      disabled={isSearching || !searchQuery.trim()}
+                      type="button"
+                    >
+                      {isSearching ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Search className="h-4 w-4" />
+                      )}
+                    </Button>
+                  </div>
+                </div>
+                
+                {searchResults.length > 0 && (
+                  <div className="border rounded-md overflow-hidden">
+                    <div className="bg-gray-50 px-4 py-2 font-medium text-sm">Resultados da busca</div>
+                    <div className="divide-y">
+                      {searchResults.map((item) => (
+                        <div 
+                          key={item.id} 
+                          className={`px-4 py-3 flex justify-between items-center hover:bg-gray-50 cursor-pointer ${settings.homePage.id === item.id ? 'bg-blue-50' : ''}`}
+                          onClick={() => handleSelectHomePageItem(item)}
+                        >
+                          <div>
+                            <div className="font-medium">{item.title}</div>
+                            <div className="text-sm text-gray-500">/{item.slug}</div>
+                          </div>
+                          {settings.homePage.id === item.id && (
+                            <div className="text-sm font-medium text-green-600">Selecionado</div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                
+                {settings.homePage.id && (
+                  <div className="bg-blue-50 border border-blue-200 rounded-md p-4">
+                    <div className="font-medium">Página inicial atual:</div>
+                    <div className="text-sm">{settings.homePage.title}</div>
+                    <div className="text-xs text-gray-500 mt-1">/{settings.homePage.slug}</div>
+                  </div>
+                )}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+      
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <Card>
           <CardHeader>
             <CardTitle>Informações Básicas</CardTitle>
@@ -217,12 +479,12 @@ export default function GeneralSettingsPage() {
             </div>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardHeader>
             <CardTitle>Informações de Contato</CardTitle>
             <CardDescription>
-              Configure as informações de contato que serão exibidas no seu blog
+              Configure as informações de contato do seu blog
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -231,47 +493,118 @@ export default function GeneralSettingsPage() {
               <Input 
                 id="contactEmail"
                 name="contactEmail"
-                type="email"
                 value={settings.contactEmail}
                 onChange={handleInputChange}
-                placeholder="contato@seusite.com"
+                placeholder="contato@seublog.com"
               />
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="contactPhone">Telefone</Label>
-              <div className="relative">
-                <InputMask
-                  mask="99 9999-9999"
-                  id="contactPhone"
-                  name="contactPhone"
-                  value={settings.contactPhone}
-                  onChange={handleInputChange}
-                  placeholder="00 0000-0000"
-                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                />
-              </div>
-              <p className="text-xs text-muted-foreground">Formato: 00 0000-0000</p>
+              <Label htmlFor="contactPhone">Telefone de Contato</Label>
+              <InputMask 
+                mask="(99) 99999-9999"
+                id="contactPhone"
+                name="contactPhone"
+                value={settings.contactPhone}
+                onChange={handleInputChange}
+                placeholder="(00) 00000-0000"
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+              />
             </div>
             
             <div className="space-y-2">
               <Label htmlFor="contactWhatsapp">WhatsApp</Label>
-              <div className="relative">
-                <InputMask
-                  mask="99 99999-9999"
-                  id="contactWhatsapp"
-                  name="contactWhatsapp"
-                  value={settings.contactWhatsapp}
-                  onChange={handleInputChange}
-                  placeholder="00 00000-0000"
-                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                />
-              </div>
-              <p className="text-xs text-muted-foreground">Formato: 00 00000-0000</p>
+              <InputMask 
+                mask="(99) 99999-9999"
+                id="contactWhatsapp"
+                name="contactWhatsapp"
+                value={settings.contactWhatsapp}
+                onChange={handleInputChange}
+                placeholder="(00) 00000-0000"
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+              />
             </div>
           </CardContent>
         </Card>
-        
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Endereço</CardTitle>
+            <CardDescription>
+              Configure as informações de endereço do seu blog
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="street">Rua/Avenida</Label>
+              <Input 
+                id="street"
+                name="address.street"
+                value={settings.address.street}
+                onChange={handleAddressChange}
+                placeholder="Av. Tecnologia"
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="number">Número</Label>
+              <Input 
+                id="number"
+                name="address.number"
+                value={settings.address.number}
+                onChange={handleAddressChange}
+                placeholder="1000"
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="city">Cidade</Label>
+              <Input 
+                id="city"
+                name="address.city"
+                value={settings.address.city}
+                onChange={handleAddressChange}
+                placeholder="São Paulo"
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="state">Estado</Label>
+              <Input 
+                id="state"
+                name="address.state"
+                value={settings.address.state}
+                onChange={handleAddressChange}
+                placeholder="SP"
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="country">País</Label>
+              <Input 
+                id="country"
+                name="address.country"
+                value={settings.address.country}
+                onChange={handleAddressChange}
+                placeholder="Brasil"
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="zipCode">CEP</Label>
+              <InputMask 
+                mask="99999-999"
+                id="zipCode"
+                name="address.zipCode"
+                value={settings.address.zipCode}
+                onChange={handleAddressChange}
+                placeholder="00000-000"
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+              />
+            </div>
+          </CardContent>
+        </Card>
+
         <Card>
           <CardHeader>
             <CardTitle>Redes Sociais</CardTitle>

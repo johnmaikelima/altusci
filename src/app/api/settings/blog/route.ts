@@ -11,7 +11,11 @@ export async function GET(request: NextRequest) {
     // Buscar configurações ou criar se não existirem
     const settings = await BlogSettingsModel.findOne() || await new BlogSettingsModel().save();
     
-    return NextResponse.json(settings);
+    // Retornar no formato esperado pelo componente
+    return NextResponse.json({
+      success: true,
+      settings: settings
+    });
   } catch (error) {
     console.error('Erro ao obter configurações do blog:', error);
     return NextResponse.json(
@@ -47,6 +51,22 @@ export async function PUT(request: NextRequest) {
       if (data.contactPhone !== undefined) settings.contactPhone = data.contactPhone;
       if (data.contactWhatsapp !== undefined) settings.contactWhatsapp = data.contactWhatsapp;
       
+      // Atualizar página inicial
+      if (data.homePage) {
+        if (!settings.homePage) {
+          settings.homePage = {
+            type: 'default',
+            id: '',
+            slug: '',
+            title: ''
+          };
+        }
+        if (data.homePage.type !== undefined) settings.homePage.type = data.homePage.type;
+        if (data.homePage.id !== undefined) settings.homePage.id = data.homePage.id;
+        if (data.homePage.slug !== undefined) settings.homePage.slug = data.homePage.slug;
+        if (data.homePage.title !== undefined) settings.homePage.title = data.homePage.title;
+      }
+      
       // Atualizar redes sociais
       if (data.socialMedia) {
         if (data.socialMedia.facebook !== undefined) settings.socialMedia.facebook = data.socialMedia.facebook;
@@ -54,6 +74,24 @@ export async function PUT(request: NextRequest) {
         if (data.socialMedia.instagram !== undefined) settings.socialMedia.instagram = data.socialMedia.instagram;
         if (data.socialMedia.linkedin !== undefined) settings.socialMedia.linkedin = data.socialMedia.linkedin;
         if (data.socialMedia.youtube !== undefined) settings.socialMedia.youtube = data.socialMedia.youtube;
+      }
+      
+      // Atualizar endereço
+      if (data.address) {
+        if (!settings.address) {
+          settings.address = {};
+        }
+        if (data.address.street !== undefined) settings.address.street = data.address.street;
+        if (data.address.number !== undefined) settings.address.number = data.address.number;
+        if (data.address.city !== undefined) settings.address.city = data.address.city;
+        if (data.address.state !== undefined) settings.address.state = data.address.state;
+        if (data.address.country !== undefined) settings.address.country = data.address.country;
+        if (data.address.zipCode !== undefined) settings.address.zipCode = data.address.zipCode;
+      }
+      
+      // Atualizar menus
+      if (data.menus !== undefined) {
+        settings.menus = data.menus;
       }
       
       await settings.save();

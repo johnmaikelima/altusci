@@ -6,12 +6,26 @@ import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { Menu, X, ChevronDown } from 'lucide-react';
 
+interface MenuItem {
+  name: string;
+  url: string;
+  order: number;
+  isCTA?: boolean;
+}
+
+interface Menu {
+  name: string;
+  location: string;
+  items: MenuItem[];
+}
+
 interface HeaderClientProps {
   categories?: any[];
   blogSettings?: {
     name: string;
     description: string;
     logo: string;
+    menus?: Menu[];
   };
 }
 
@@ -21,6 +35,14 @@ export default function HeaderClient({ categories = [], blogSettings }: HeaderCl
   const [scrolled, setScrolled] = useState(false);
   const [localCategories, setLocalCategories] = useState<any[]>(categories);
   const pathname = usePathname();
+  
+  // Encontrar o menu do cabeçalho
+  const headerMenu = blogSettings?.menus?.find(menu => menu.location === 'header');
+  // Ordenar os itens do menu por ordem
+  const menuItems = headerMenu?.items?.sort((a, b) => a.order - b.order) || [];
+  
+  // Desativar o menu de categorias
+  const showCategoriesMenu = false;
 
   // Efeito para detectar rolagem
   useEffect(() => {
@@ -58,9 +80,9 @@ export default function HeaderClient({ categories = [], blogSettings }: HeaderCl
   }, [categories]);
 
   return (
-    <header
-      className={`fixed top-0 left-0 right-0 w-full z-50 transition-all duration-300 ${
-        scrolled ? 'bg-white shadow-md py-2' : 'bg-white py-4'
+    <header 
+      className={`fixed top-[32px] left-0 right-0 z-40 bg-white w-full transition-all duration-300 ${
+        scrolled ? 'shadow-md py-2' : 'py-4'
       }`}
     >
       <div className="container mx-auto px-4">
@@ -79,56 +101,79 @@ export default function HeaderClient({ categories = [], blogSettings }: HeaderCl
 
           {/* Menu Desktop */}
           <nav className="hidden md:flex items-center space-x-8">
-            <Link
-              href="/"
-              className={`text-base font-medium transition-colors hover:text-blue-600 ${
-                pathname === '/' ? 'text-blue-600' : 'text-gray-800'
-              }`}
-            >
-              Início
-            </Link>
-            <Link
-              href="/sobre"
-              className={`text-base font-medium transition-colors hover:text-blue-600 ${
-                pathname === '/sobre' ? 'text-blue-600' : 'text-gray-800'
-              }`}
-            >
-              Sobre Nós
-            </Link>
+            {/* Renderizar itens do menu configurados */}
+            {menuItems.length > 0 ? (
+              menuItems.map((item, index) => (
+                <Link
+                  key={index}
+                  href={item.url}
+                  className={item.isCTA 
+                    ? `px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors font-medium` 
+                    : `text-base font-medium transition-colors hover:text-blue-600 ${
+                        pathname === item.url ? 'text-blue-600' : 'text-gray-800'
+                      }`
+                  }
+                >
+                  {item.name}
+                </Link>
+              ))
+            ) : (
+              // Menu padrão caso não haja itens configurados
+              <>
+                <Link
+                  href="/"
+                  className={`text-base font-medium transition-colors hover:text-blue-600 ${
+                    pathname === '/' ? 'text-blue-600' : 'text-gray-800'
+                  }`}
+                >
+                  Início
+                </Link>
+                <Link
+                  href="/sobre"
+                  className={`text-base font-medium transition-colors hover:text-blue-600 ${
+                    pathname === '/sobre' ? 'text-blue-600' : 'text-gray-800'
+                  }`}
+                >
+                  Sobre Nós
+                </Link>
+              </>
+            )}
             
-            {/* Dropdown de Categorias */}
-            <div className="relative group">
-              <button
-                className={`flex items-center text-base font-medium transition-colors hover:text-blue-600 ${
-                  pathname?.startsWith('/categorias') ? 'text-blue-600' : 'text-gray-800'
-                }`}
-                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-              >
-                Categorias
-                <ChevronDown className="ml-1 h-4 w-4" />
-              </button>
-              
-              <div className="absolute left-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
-                <div className="py-1" role="menu" aria-orientation="vertical">
-                  {localCategories.length > 0 ? (
-                    localCategories.map((category) => (
-                      <Link
-                        key={category._id}
-                        href={`/categorias/${category.slug}`}
-                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-blue-600"
-                        role="menuitem"
-                      >
-                        {category.name}
-                      </Link>
-                    ))
-                  ) : (
-                    <span className="block px-4 py-2 text-sm text-gray-500">
-                      Nenhuma categoria
-                    </span>
-                  )}
-                </div>
+            {/* Dropdown de Categorias - oculto */}
+            {showCategoriesMenu && (
+              <div className="relative group">
+                <button
+                  className={`flex items-center text-base font-medium transition-colors hover:text-blue-600 ${
+                    pathname?.startsWith('/categorias') ? 'text-blue-600' : 'text-gray-800'
+                  }`}
+                  onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                >
+                  Categorias
+                  <ChevronDown className={`ml-1 h-4 w-4 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} />
+                </button>
+                
+                {isDropdownOpen && (
+                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-10">
+                    {localCategories.length > 0 ? (
+                      localCategories.map((category) => (
+                        <Link
+                          key={category._id}
+                          href={`/categorias/${category.slug}`}
+                          className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                          onClick={() => setIsDropdownOpen(false)}
+                        >
+                          {category.name}
+                        </Link>
+                      ))
+                    ) : (
+                      <span className="block px-4 py-2 text-sm text-gray-500">
+                        Nenhuma categoria
+                      </span>
+                    )}
+                  </div>
+                )}
               </div>
-            </div>
+            )}
           </nav>
 
           {/* Botão do Menu Mobile */}
@@ -144,61 +189,76 @@ export default function HeaderClient({ categories = [], blogSettings }: HeaderCl
         {isMenuOpen && (
           <div className="md:hidden mt-4 pb-4">
             <nav className="flex flex-col space-y-4">
-              <Link
-                href="/"
-                className={`text-base font-medium transition-colors hover:text-blue-600 ${
-                  pathname === '/' ? 'text-blue-600' : 'text-gray-800'
-                }`}
-                onClick={() => setIsMenuOpen(false)}
-              >
-                Início
-              </Link>
-              <Link
-                href="/sobre"
-                className={`text-base font-medium transition-colors hover:text-blue-600 ${
-                  pathname === '/sobre' ? 'text-blue-600' : 'text-gray-800'
-                }`}
-                onClick={() => setIsMenuOpen(false)}
-              >
-                Sobre Nós
-              </Link>
-              
-              {/* Categorias no Mobile */}
-              <div>
-                <button
-                  className={`flex items-center text-base font-medium transition-colors hover:text-blue-600 ${
-                    pathname?.startsWith('/categorias') ? 'text-blue-600' : 'text-gray-800'
-                  }`}
-                  onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                >
-                  Categorias
-                  <ChevronDown className={`ml-1 h-4 w-4 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} />
-                </button>
-                
-                {isDropdownOpen && (
-                  <div className="pl-4 mt-2 space-y-2">
-                    {localCategories.length > 0 ? (
-                      localCategories.map((category) => (
-                        <Link
-                          key={category._id}
+              {/* Renderizar itens do menu configurados */}
+              {menuItems.length > 0 ? (
+                menuItems.map((item, index) => (
+                  <Link
+                    key={index}
+                    href={item.url}
+                    className={item.isCTA 
+                      ? `px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors font-medium text-center` 
+                      : `text-base font-medium transition-colors hover:text-blue-600 ${
+                          pathname === item.url ? 'text-blue-600' : 'text-gray-800'
+                        }`
+                    }
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    {item.name}
+                  </Link>
+                ))
+              ) : (
+                // Menu padrão caso não haja itens configurados
+                <>
+                  <Link
+                    href="/"
+                    className={`text-base font-medium transition-colors hover:text-blue-600 ${
+                      pathname === '/' ? 'text-blue-600' : 'text-gray-800'
+                    }`}
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    Início
+                  </Link>
+                  <Link
+                    href="/sobre"
+                    className={`text-base font-medium transition-colors hover:text-blue-600 ${
+                      pathname === '/sobre' ? 'text-blue-600' : 'text-gray-800'
+                    }`}
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    Sobre Nós
+                  </Link>
+                </>
+              )}
+              {/* Categorias no menu mobile - oculto */}
+              {showCategoriesMenu && (
+                <div className="py-2">
+                  <div 
+                    className="flex justify-between items-center"
+                    onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                  >
+                    <span className="text-gray-700">Categorias</span>
+                    <ChevronDown size={16} />
+                  </div>
+                  
+                  {isDropdownOpen && (
+                    <div className="pl-4 mt-2 space-y-2">
+                      {localCategories.map((category) => (
+                        <Link 
+                          key={category._id} 
                           href={`/categorias/${category.slug}`}
-                          className="block text-sm text-gray-700 hover:text-blue-600"
+                          className="block py-1 text-gray-600"
                           onClick={() => {
-                            setIsMenuOpen(false);
                             setIsDropdownOpen(false);
+                            setIsMenuOpen(false);
                           }}
                         >
                           {category.name}
                         </Link>
-                      ))
-                    ) : (
-                      <span className="block text-sm text-gray-500">
-                        Nenhuma categoria
-                      </span>
-                    )}
-                  </div>
-                )}
-              </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
             </nav>
           </div>
         )}

@@ -49,7 +49,9 @@ export async function GET(request: Request, { params }: { params: { id: string }
         email: 'sistema@example.com'
       },
       tags: post.tags || [],
-      category: post.category ? post.category.name : 'Sem categoria'
+      category: post.category ? post.category._id.toString() : '',
+      categoryName: post.category ? post.category.name : 'Sem categoria',
+      coverImage: post.coverImage || ''
     };
     
     return NextResponse.json(formattedPost);
@@ -103,6 +105,7 @@ export async function PUT(request: Request, { params }: { params: { id: string }
     if (body.excerpt) updateData.excerpt = body.excerpt;
     if (body.tags) updateData.tags = body.tags;
     if (body.category) updateData.category = body.category;
+    if (body.coverImage) updateData.coverImage = body.coverImage;
     
     // Atualizar status de publicação se fornecido
     if (typeof body.published === 'boolean') {
@@ -146,7 +149,9 @@ export async function PUT(request: Request, { params }: { params: { id: string }
         email: 'sistema@example.com'
       },
       tags: updatedPost.tags || [],
-      category: updatedPost.category ? updatedPost.category.name : 'Sem categoria'
+      category: updatedPost.category ? updatedPost.category._id.toString() : '',
+      categoryName: updatedPost.category ? updatedPost.category.name : 'Sem categoria',
+      coverImage: updatedPost.coverImage || ''
     };
     
     // Gerar o sitemap automaticamente se o post estiver publicado

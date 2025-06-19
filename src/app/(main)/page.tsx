@@ -4,6 +4,12 @@ import { ArrowRight, Clock, Tag, User } from 'lucide-react';
 import { connectToDatabase } from '@/lib/mongoose';
 import PostModel from '@/models/post';
 import CategoryModel from '@/models/category';
+import BlogSettingsModel from '@/models/blog-settings';
+import PageModel from '@/models/page';
+import { redirect } from 'next/navigation';
+
+// Desabilitar cache para garantir que sempre tenhamos os dados mais recentes
+export const revalidate = 0; // Isso força o Next.js a revalidar a página a cada requisição
 
 // Definindo a interface Post para uso na página
 interface Post {
@@ -22,6 +28,7 @@ interface Post {
   };
   tags: string[];
   category: string;
+  coverImage?: string;
 }
 
 // Definindo a interface Category para uso na página
@@ -80,11 +87,43 @@ async function getRecentPosts(): Promise<Post[]> {
       email: 'sistema@example.com'
     },
     tags: post.tags || [],
-    category: post.category ? post.category.name : 'Sem categoria'
+    category: post.category ? post.category.name : 'Sem categoria',
+    coverImage: post.coverImage || ''
   }));
 }
 
+// Função para verificar a configuração da página inicial
+async function getHomePageConfig() {
+  await connectToDatabase();
+  
+  try {
+    const settings = await BlogSettingsModel.findOne().lean();
+    
+    if (!settings || !settings.homePage || settings.homePage.type === 'default') {
+      return { type: 'default' };
+    }
+    
+    return settings.homePage;
+  } catch (error) {
+    console.error('Erro ao buscar configurações da página inicial:', error);
+    return { type: 'default' };
+  }
+}
+
 export default async function Home() {
+  // Verificar a configuração da página inicial
+  const homePageConfig = await getHomePageConfig();
+  
+  // Redirecionar para o conteúdo apropriado com base na configuração
+  if (homePageConfig.type === 'page' && homePageConfig.slug) {
+    redirect(`/${homePageConfig.slug}`);
+  } else if (homePageConfig.type === 'category' && homePageConfig.slug) {
+    redirect(`/categorias/${homePageConfig.slug}`);
+  } else if (homePageConfig.type === 'post' && homePageConfig.slug) {
+    redirect(`/blog/${homePageConfig.slug}`);
+  }
+  
+  // Se não houver configuração específica ou for 'default', renderizar a página inicial padrão
   // Buscar posts recentes e categorias em destaque
   const [recentPosts, featuredCategories] = await Promise.all([
     getRecentPosts(),
@@ -147,16 +186,22 @@ export default async function Home() {
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {recentPosts.map((post) => (
-              <div key={post.id} className="bg-white rounded-lg shadow-md overflow-hidden">
-                <div className="relative h-48">
-                  <Image
-                    src="/post-placeholder-1.jpg"
-                    alt={post.title}
-                    fill
-                    className="object-cover"
-                  />
-                </div>
+              <div key={post.id} className="bg-white rounded-lg shadow-sm overflow-hidden border border-gray-100">
+                {post.coverImage && (
+                  <div className="relative h-48 w-full overflow-hidden">
+                    <img 
+                      src={post.coverImage} 
+                      alt={post.title}
+                      className="w-full h-full object-cover transition-transform hover:scale-105"
+                    />
+                  </div>
+                )}
                 <div className="p-6">
+                  <h3 className="text-xl font-bold mb-2">
+                    <Link href={`/blog/${post.slug}`} className="hover:text-blue-600 transition-colors">
+                      {post.title}
+                    </Link>
+                  </h3>
                   <div className="flex items-center text-sm text-gray-500 mb-3">
                     <Clock className="h-4 w-4 mr-1" />
                     <span>

@@ -17,6 +17,7 @@ export default function EditPostPage({ params }: { params: { id: string } }) {
     excerpt: '',
     tags: '',
     category: '',
+    categoryName: '',
     published: false,
     slug: '',
     coverImage: ''
@@ -81,6 +82,7 @@ export default function EditPostPage({ params }: { params: { id: string } }) {
           excerpt: post.excerpt,
           tags: post.tags.join(','),
           category: post.category,
+          categoryName: post.categoryName || '',
           published: post.published,
           slug: post.slug,
           coverImage: post.coverImage || ''

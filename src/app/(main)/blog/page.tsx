@@ -20,6 +20,7 @@ interface Post {
   };
   tags: string[];
   category: string;
+  coverImage?: string;
 }
 
 // Função para obter configurações do tema (simulada)
@@ -77,7 +78,8 @@ async function fetchPosts(): Promise<Post[]> {
       email: 'sistema@example.com'
     },
     tags: post.tags || [],
-    category: post.category ? post.category.name : 'Sem categoria'
+    category: post.category ? post.category.name : 'Sem categoria',
+    coverImage: post.coverImage || ''
   }));
 }
 
@@ -126,6 +128,15 @@ export default async function Blog() {
               backgroundColor: colors.background,
             }}
           >
+            {post.coverImage && (
+              <div className="relative h-48 w-full overflow-hidden">
+                <img 
+                  src={post.coverImage} 
+                  alt={post.title}
+                  className="w-full h-full object-cover transition-transform hover:scale-105"
+                />
+              </div>
+            )}
             <div className="p-6">
               <div className="flex items-center gap-2 mb-3">
                 <span 

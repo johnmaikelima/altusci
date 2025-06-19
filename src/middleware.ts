@@ -14,13 +14,27 @@ const publicPaths = [
 // Função para verificar se a rota é do site público
 const isPublicSite = (pathname: string) => {
   // Verificar se é a raiz ou começa com /blog, /categorias, /sobre
-  return pathname === '/' || 
-         pathname.startsWith('/blog/') || 
-         pathname === '/blog' ||
-         pathname.startsWith('/categorias/') ||
-         pathname === '/categorias' ||
-         pathname.startsWith('/sobre/') ||
-         pathname === '/sobre';
+  // Ou se é uma página dinâmica pelo slug (não começando com /dashboard, /api, /login)
+  if (pathname === '/' || 
+      pathname.startsWith('/blog/') || 
+      pathname === '/blog' ||
+      pathname.startsWith('/categorias/') ||
+      pathname === '/categorias' ||
+      pathname.startsWith('/sobre/') ||
+      pathname === '/sobre') {
+    return true;
+  }
+  
+  // Verificar se é uma página dinâmica pelo slug
+  // Qualquer rota que não seja dashboard, api, login e não tenha mais de um nível de profundidade
+  // pode ser uma página dinâmica
+  const segments = pathname.split('/').filter(Boolean);
+  if (segments.length === 1 && 
+      !['dashboard', 'api', 'login', '_next', 'favicon.ico'].includes(segments[0])) {
+    return true;
+  }
+  
+  return false;
 };
 
 // Função para verificar se o usuário está autenticado

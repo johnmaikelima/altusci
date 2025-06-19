@@ -1,7 +1,7 @@
 'use client';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Palette, Settings, Globe, Bell, Shield, User } from 'lucide-react';
+import { Palette, Settings, Globe, Bell, Shield, User, Menu, Image as ImageIcon } from 'lucide-react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 
@@ -27,6 +27,20 @@ const settingsCards: SettingCard[] = [
     href: '/dashboard/settings/general',
     icon: <Settings className="h-6 w-6" />,
     color: 'bg-blue-500/10 text-blue-500',
+  },
+  {
+    title: 'Slider',
+    description: 'Crie e gerencie banners e sliders',
+    href: '/dashboard/settings/slider',
+    icon: <ImageIcon className="h-6 w-6" />,
+    color: 'bg-pink-500/10 text-pink-500',
+  },
+  {
+    title: 'Menus',
+    description: 'Configure os menus do seu site',
+    href: '/dashboard/settings/menus',
+    icon: <Menu className="h-6 w-6" />,
+    color: 'bg-indigo-500/10 text-indigo-500',
   },
   {
     title: 'SEO',
