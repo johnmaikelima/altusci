@@ -4,7 +4,6 @@ import { ArrowRight, Clock, Tag, User } from 'lucide-react';
 import { connectToDatabase } from '@/lib/mongoose';
 import PostModel from '@/models/post';
 import CategoryModel from '@/models/category';
-import BlogSettingsModel from '@/models/blog-settings';
 import PageModel from '@/models/page';
 import { redirect } from 'next/navigation';
 // Importar o componente cliente para garantir que o manifesto seja gerado corretamente
@@ -13,6 +12,7 @@ import MainPageClient from './page.client';
 import { serializeData } from '@/lib/utils/serialize';
 // Importar o componente de botão WhatsApp fixo
 import GlobalWhatsAppButton from '@/components/global-whatsapp-button';
+import { getServerSettings } from '@/lib';
 
 // Configurações para forçar renderização dinâmica e resolver problemas de build
 export const dynamic = 'force-dynamic';
@@ -23,11 +23,16 @@ export const revalidate = 0; // Isso força o Next.js a revalidar a página a ca
 
 // Gerar metadata dinamicamente com base nas configurações do blog e da página inicial configurada
 export async function generateMetadata() {
-  await connectToDatabase();
-  
   try {
     // Buscar configurações do blog
-    const blogSettings = await getBlogSettings();
+    const blogSettings = await getServerSettings();
+    
+    if (!blogSettings) {
+      return {
+        title: 'Página Inicial',
+        description: 'Bem-vindo ao nosso site',
+      };
+    }
     
     // Buscar configurações da página inicial
     const homePageConfig = await getHomePageConfig();
@@ -49,13 +54,11 @@ export async function generateMetadata() {
       description: blogSettings.description,
     };
   } catch (error) {
-    console.error('Erro ao gerar metadata:', error);
-    // Em caso de erro, usar um título padrão
+    console.error('Erro ao gerar metadados da página inicial:', error);
+    // Retornar metadados padrão em caso de erro
     return {
-      title: {
-        absolute: 'ALTUS',
-      },
-      description: 'Manutenção de Notebook com a Altustec',
+      title: 'Página Inicial',
+      description: 'Bem-vindo ao nosso site',
     };
   }
 }
@@ -168,31 +171,20 @@ async function getHomePageConfig() {
 
 // Função para buscar configurações do blog
 async function getBlogSettings() {
-  await connectToDatabase();
-  
   try {
-    // Buscar configurações do blog
-    let settings = await BlogSettingsModel.findOne().lean();
+    const settings = await getServerSettings();
     
-    // Se não encontrar configurações, criar um documento vazio para garantir que exista
     if (!settings) {
-      const BlogSettingsModelWithStatics = BlogSettingsModel as any;
-      if (typeof BlogSettingsModelWithStatics.findOneOrCreate === 'function') {
-        settings = await BlogSettingsModelWithStatics.findOneOrCreate();
-      } else {
-        // Criar um documento vazio se não existir o método findOneOrCreate
-        settings = await BlogSettingsModel.create({});
-        return {
-          name: 'ALTUS',
-          description: 'Manutenção de Notebook com a Altustec',
-          whatsappConfig: {
-            number: '5511999999999',
-            message: 'Olá! Vim pelo site e gostaria de algumas informações.',
-            hoverText: 'Precisa de ajuda? Fale conosco!',
-            enabled: true
-          }
-        };
-      }
+      return {
+        name: 'ALTUS',
+        description: 'Manutenção de Notebook com a Altustec',
+        whatsappConfig: {
+          number: '5511999999999',
+          message: 'Olá! Vim pelo site e gostaria de algumas informações.',
+          hoverText: 'Precisa de ajuda? Fale conosco!',
+          enabled: true
+        }
+      };
     }
     
     // Garantir que as configurações do WhatsApp estejam presentes

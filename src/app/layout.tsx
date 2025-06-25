@@ -1,33 +1,26 @@
 import './globals.css';
 import { Inter } from 'next/font/google';
 import { ThemeProvider } from '@/components/theme-provider';
-import { AuthProvider } from '@/components/providers/auth-provider';
 import { Toaster } from 'react-hot-toast';
+import { AuthProvider } from '@/components/providers/auth-provider';
+import { BlogSettingsProvider } from '@/components/providers/blog-settings-provider';
 import { Metadata } from 'next';
-import { connectToDatabase } from '@/lib/mongoose';
-import BlogSettingsModel from '@/models/blog-settings';
+import { getServerSettings } from '@/lib';
+import { BlogSettings } from '@/types/blog-settings';
 
 // Buscar configurações do blog para usar como metadata
 export async function generateMetadata(): Promise<Metadata> {
   try {
-    // Conectar ao banco de dados
-    await connectToDatabase();
+    const settings = await getServerSettings();
     
-    // Buscar configurações do blog e serializar para evitar problemas com objetos MongoDB
-    const settings = await BlogSettingsModel.findOne().lean();
-    
-    // Serializar manualmente para garantir que não há objetos complexos
-    const serializedSettings = settings ? JSON.parse(JSON.stringify(settings)) : null;
-    
-    // Se encontrou configurações, usar o nome do blog como título padrão
-    if (serializedSettings && serializedSettings.name) {
+    if (settings?.name) {
       return {
         metadataBase: new URL('http://localhost:3000'),
         title: {
           template: '%s',
-          default: String(serializedSettings.name)
+          default: String(settings.name)
         },
-        description: serializedSettings.description ? String(serializedSettings.description) : 'Manutenção de Notebook com a Altustec',
+        description: settings.description ? String(settings.description) : 'Manutenção de Notebook com a Altustec',
       };
     }
   } catch (error) {
@@ -47,18 +40,32 @@ export async function generateMetadata(): Promise<Metadata> {
 
 const inter = Inter({ subsets: ['latin'], display: 'swap' });
 
-export default function RootLayout({
+// Buscar configurações iniciais do blog no servidor
+async function getInitialSettings(): Promise<BlogSettings | null> {
+  try {
+    return await getServerSettings();
+  } catch (error) {
+    console.error('Erro ao buscar configurações iniciais do blog:', error);
+    return null;
+  }
+}
+
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const initialSettings = await getInitialSettings();
+  
   return (
     <html lang="pt-BR" suppressHydrationWarning>
       <body className={inter.className}>
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
           <AuthProvider>
-            {children}
-            <Toaster position="top-right" />
+            <BlogSettingsProvider initialSettings={initialSettings}>
+              {children}
+              <Toaster position="top-right" />
+            </BlogSettingsProvider>
           </AuthProvider>
         </ThemeProvider>
       </body>

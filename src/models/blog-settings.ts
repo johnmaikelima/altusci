@@ -1,4 +1,5 @@
 import mongoose, { Schema, Document } from 'mongoose';
+import { BlogSettings as IBlogSettings, SmtpSettings, ContactFormSettings } from '@/types/blog-settings';
 
 export interface MenuItem {
   name: string;
@@ -13,15 +14,12 @@ export interface Menu {
   items: MenuItem[];
 }
 
-export interface IBlogSettings extends Document {
-  name: string;
-  description: string;
+export interface IBlogSettingsModel extends Document, Omit<IBlogSettings, '_id'> {
+  // Adicionando campos específicos do modelo que não estão na interface genérica
   logo: string;
   favicon: string;
   defaultAuthorName: string;
   defaultAuthorEmail: string;
-  contactEmail: string;
-  contactPhone: string;
   contactWhatsapp: string;
   whatsappConfig: {
     number: string;
@@ -29,20 +27,10 @@ export interface IBlogSettings extends Document {
     hoverText: string;
     enabled: boolean;
   };
-  smtp: {
-    host: string;
-    port: number;
-    secure: boolean;
-    auth: {
-      user: string;
-      pass: string;
-    };
+  smtp: SmtpSettings & {
     from: string; // Email de origem para envio de mensagens
   };
-  contactForm: {
-    enabled: boolean;
-    recipientEmail: string;
-    captchaEnabled: boolean;
+  contactForm: ContactFormSettings & {
     successMessage: string;
     errorMessage: string;
   };
@@ -324,4 +312,6 @@ BlogSettingsSchema.statics.findOneOrCreate = async function() {
   return this.create({});
 };
 
-export default mongoose.models.BlogSettings || mongoose.model<IBlogSettings>('BlogSettings', BlogSettingsSchema);
+const BlogSettings = mongoose.models.BlogSettings || mongoose.model<IBlogSettingsModel>('BlogSettings', BlogSettingsSchema);
+
+export default BlogSettings;

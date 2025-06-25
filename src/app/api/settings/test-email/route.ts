@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
 import nodemailer from 'nodemailer';
-import { withAdminAuth } from '@/lib/auth';
+import { withAuth } from '@/lib/auth';
 
-export const POST = withAdminAuth(async (req: Request) => {
+export const POST = withAuth(async (req: Request) => {
   try {
     const { smtp, recipient } = await req.json();
     

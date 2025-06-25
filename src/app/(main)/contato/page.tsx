@@ -1,294 +1,133 @@
-'use client';
-
-import { useState, useRef } from 'react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Label } from '@/components/ui/label';
-import { Loader2, Mail, Phone, MapPin, Clock, Send } from 'lucide-react';
-import { useToast } from '@/components/ui/use-toast';
-import { useBlogSettings } from '@/hooks/use-blog-settings';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Metadata } from 'next';
+import Link from 'next/link';
+import { Mail, Phone, MapPin, Clock } from 'lucide-react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import MapEmbed from '@/components/contact/map-embed';
+import ContactForm from '@/components/contact/contact-form';
+import { getServerSettings } from '@/lib';
 
-export default function ContatoPage() {
-  const { settings, isLoading } = useBlogSettings();
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    subject: '',
-    message: '',
-    captchaAnswer: '',
-  });
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [formStatus, setFormStatus] = useState<'idle' | 'success' | 'error'>('idle');
-  const { toast } = useToast();
+// Função para gerar metadados dinâmicos para a página
+export async function generateMetadata(): Promise<Metadata> {
+  const settings = await getServerSettings();
   
-  // Captcha simples
-  const captchaRef = useRef({
-    num1: Math.floor(Math.random() * 10),
-    num2: Math.floor(Math.random() * 10),
-  });
-  
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+  return {
+    title: settings?.name ? `Contato - ${settings.name}` : 'Contato',
+    description: settings?.description || 'Entre em contato conosco para mais informações',
   };
+}
+
+export default async function ContatoPage() {
+  // Buscar configurações do blog usando a função auxiliar
+  const settings = await getServerSettings();
   
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    // Verificar captcha
-    if (settings?.contactForm?.captchaEnabled) {
-      const correctAnswer = (captchaRef.current.num1 + captchaRef.current.num2).toString();
-      if (formData.captchaAnswer !== correctAnswer) {
-        toast({
-          title: "Erro de verificação",
-          description: "A resposta do captcha está incorreta. Por favor, tente novamente.",
-          variant: "destructive",
-        });
-        return;
-      }
-    }
-    
-    setIsSubmitting(true);
-    
-    try {
-      const response = await fetch('/api/contact', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData),
-      });
-      
-      if (response.ok) {
-        setFormStatus('success');
-        setFormData({
-          name: '',
-          email: '',
-          subject: '',
-          message: '',
-          captchaAnswer: '',
-        });
-        // Gerar novo captcha
-        captchaRef.current = {
-          num1: Math.floor(Math.random() * 10),
-          num2: Math.floor(Math.random() * 10),
-        };
-      } else {
-        setFormStatus('error');
-      }
-    } catch (error) {
-      setFormStatus('error');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-  
-  if (isLoading) {
+  // Se não houver configurações, mostrar uma mensagem
+  if (!settings) {
     return (
-      <div className="container mx-auto py-12 flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div className="container mx-auto py-12">
+        <h1 className="text-4xl font-bold text-center mb-8">Entre em Contato</h1>
+        <p className="text-center text-muted-foreground">Carregando informações de contato...</p>
       </div>
     );
   }
   
   return (
-    <div className="container mx-auto py-12 px-4 md:px-6">
-      <h1 className="text-4xl font-bold text-center mb-8">Entre em Contato</h1>
+    <div className="container mx-auto py-12 px-4">
+      <h1 className="text-4xl font-bold text-center mb-4">Entre em Contato</h1>
       <p className="text-center text-muted-foreground mb-12 max-w-2xl mx-auto">
-        Estamos aqui para responder suas perguntas e ouvir seus comentários. Preencha o formulário abaixo ou use um dos nossos canais de contato.
+        Estamos prontos para atender suas necessidades. Entre em contato conosco através do formulário ou utilize os canais diretos abaixo.
       </p>
       
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
-        {settings?.contactEmail && (
-          <Card className="h-full">
-            <CardHeader className="pb-2">
-              <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-4">
-                <Mail className="h-6 w-6 text-primary" />
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {/* Card de informações de contato */}
+        <Card className="h-full shadow-lg border-0 bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800">
+          <CardHeader>
+            <CardTitle className="text-2xl">Informações de Contato</CardTitle>
+            <CardDescription>Escolha a melhor forma de nos contatar</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {settings?.contactEmail && (
+              <div className="flex items-start">
+                <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mr-4">
+                  <Mail className="h-6 w-6 text-primary" />
+                </div>
+                <div>
+                  <h3 className="font-medium mb-1">Email</h3>
+                  <a href={`mailto:${settings.contactEmail}`} className="text-primary hover:underline">
+                    {settings.contactEmail}
+                  </a>
+                </div>
               </div>
-              <CardTitle>Email</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <a href={`mailto:${settings.contactEmail}`} className="text-primary hover:underline">
-                {settings.contactEmail}
-              </a>
-            </CardContent>
-          </Card>
-        )}
+            )}
+            
+            {settings?.contactPhone && (
+              <div className="flex items-start">
+                <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mr-4">
+                  <Phone className="h-6 w-6 text-primary" />
+                </div>
+                <div>
+                  <h3 className="font-medium mb-1">WhatsApp</h3>
+                  <a href={`https://wa.me/${settings.contactPhone.replace(/\D/g, '')}`} className="text-primary hover:underline">
+                    {settings.contactPhone}
+                  </a>
+                </div>
+              </div>
+            )}
+            
+            {settings?.contactAddress && (
+              <div className="flex items-start">
+                <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mr-4">
+                  <MapPin className="h-6 w-6 text-primary" />
+                </div>
+                <div>
+                  <h3 className="font-medium mb-1">Endereço</h3>
+                  <p className="text-muted-foreground">{settings.contactAddress}</p>
+                  {settings?.contactHours && (
+                    <div className="mt-2">
+                      <div className="flex items-center text-sm text-muted-foreground">
+                        <Clock className="h-4 w-4 mr-2" />
+                        <span>{settings.contactHours}</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+            
+            {/* Mapa */}
+            {settings?.contactAddress && (
+              <div className="mt-8">
+                <MapEmbed 
+                  address={settings.contactAddress} 
+                  height="200"
+                  className="rounded-lg shadow-md"
+                />
+              </div>
+            )}
+          </CardContent>
+        </Card>
         
-        {settings?.contactPhone && (
-          <Card className="h-full">
-            <CardHeader className="pb-2">
-              <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-4">
-                <Phone className="h-6 w-6 text-primary" />
-              </div>
-              <CardTitle>Telefone</CardTitle>
+        {/* Formulário de contato */}
+        {settings?.contactForm?.enabled && (
+          <Card className="h-full shadow-lg border-0">
+            <CardHeader>
+              <CardTitle className="text-2xl">Envie uma mensagem</CardTitle>
+              <CardDescription>Preencha o formulário abaixo e entraremos em contato o mais breve possível.</CardDescription>
             </CardHeader>
             <CardContent>
-              <a href={`tel:${settings.contactPhone.replace(/\D/g, '')}`} className="text-primary hover:underline">
-                {settings.contactPhone}
-              </a>
-            </CardContent>
-          </Card>
-        )}
-        
-        {settings?.address?.street && (
-          <Card className="h-full">
-            <CardHeader className="pb-2">
-              <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-4">
-                <MapPin className="h-6 w-6 text-primary" />
+              <div className="mb-6">
+                <p className="text-sm text-muted-foreground mb-2">
+                  Ao enviar este formulário, você concorda com nossa <Link href="/politica-de-privacidade" className="text-primary hover:underline">Política de Privacidade</Link>.
+                </p>
               </div>
-              <CardTitle>Endereço</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <address className="not-italic mb-4">
-                {settings.address.street}, {settings.address.number}<br />
-                {settings.address.city}, {settings.address.state}<br />
-                {settings.address.zipCode}
-              </address>
               
-              {/* Mapa do Google */}
-              <MapEmbed 
-                address={`${settings.address.street}, ${settings.address.number}, ${settings.address.city}, ${settings.address.state}, ${settings.address.zipCode}`}
-                height="150px"
-                className="mt-2"
-                zoom={14}
+              <ContactForm 
+                captchaEnabled={settings?.contactForm?.captchaEnabled} 
+                termsEnabled={true}
               />
             </CardContent>
           </Card>
         )}
       </div>
-      
-      {settings?.contactForm?.enabled && (
-        <div className="max-w-2xl mx-auto">
-          <Card>
-            <CardHeader>
-              <CardTitle>Envie uma mensagem</CardTitle>
-              <CardDescription>Preencha o formulário abaixo e entraremos em contato o mais breve possível.</CardDescription>
-            </CardHeader>
-            <CardContent>
-              {formStatus === 'success' && (
-                <Alert className="mb-6 bg-green-50 text-green-800 border-green-200">
-                  <AlertDescription>
-                    {settings?.contactForm?.successMessage || 'Sua mensagem foi enviada com sucesso! Entraremos em contato em breve.'}
-                  </AlertDescription>
-                </Alert>
-              )}
-              
-              {formStatus === 'error' && (
-                <Alert className="mb-6 bg-red-50 text-red-800 border-red-200">
-                  <AlertDescription>
-                    {settings?.contactForm?.errorMessage || 'Ocorreu um erro ao enviar sua mensagem. Por favor, tente novamente.'}
-                  </AlertDescription>
-                </Alert>
-              )}
-              
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="name">Nome</Label>
-                    <Input 
-                      id="name" 
-                      name="name" 
-                      placeholder="Seu nome" 
-                      required 
-                      value={formData.name}
-                      onChange={handleChange}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="email">Email</Label>
-                    <Input 
-                      id="email" 
-                      name="email" 
-                      type="email" 
-                      placeholder="seu.email@exemplo.com" 
-                      required 
-                      value={formData.email}
-                      onChange={handleChange}
-                    />
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="subject">Assunto</Label>
-                  <Input 
-                    id="subject" 
-                    name="subject" 
-                    placeholder="Assunto da mensagem" 
-                    required 
-                    value={formData.subject}
-                    onChange={handleChange}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="message">Mensagem</Label>
-                  <Textarea 
-                    id="message" 
-                    name="message" 
-                    placeholder="Digite sua mensagem aqui..." 
-                    rows={5} 
-                    required 
-                    value={formData.message}
-                    onChange={handleChange}
-                  />
-                </div>
-                
-                {settings?.contactForm?.captchaEnabled && (
-                  <div className="space-y-2">
-                    <Label htmlFor="captcha">
-                      Verificação: Quanto é {captchaRef.current.num1} + {captchaRef.current.num2}?
-                    </Label>
-                    <Input 
-                      id="captchaAnswer" 
-                      name="captchaAnswer" 
-                      placeholder="Digite a resposta" 
-                      required 
-                      value={formData.captchaAnswer}
-                      onChange={handleChange}
-                    />
-                  </div>
-                )}
-                
-                <Button type="submit" className="w-full" disabled={isSubmitting}>
-                  {isSubmitting ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Enviando...
-                    </>
-                  ) : (
-                    <>
-                      <Send className="mr-2 h-4 w-4" />
-                      Enviar Mensagem
-                    </>
-                  )}
-                </Button>
-              </form>
-            </CardContent>
-          </Card>
-        </div>
-      )}
-      
-      {/* Seção de mapa completo */}
-      {settings?.address?.street && (
-        <div className="mt-16 mb-12">
-          <h2 className="text-2xl font-bold mb-6 text-center">Nossa Localização</h2>
-          <div className="rounded-lg overflow-hidden shadow-lg border border-border">
-            <MapEmbed 
-              address={`${settings.address.street}, ${settings.address.number}, ${settings.address.city}, ${settings.address.state}, ${settings.address.zipCode}`}
-              height="500px"
-              zoom={16}
-            />
-          </div>
-          <div className="mt-4 text-center text-muted-foreground">
-            <p>
-              {settings.address.street}, {settings.address.number} - {settings.address.city}, {settings.address.state} - {settings.address.zipCode}
-            </p>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

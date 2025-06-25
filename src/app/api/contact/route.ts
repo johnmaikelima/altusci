@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/mongoose';
 import BlogSettingsModel from '@/models/blog-settings';
 import nodemailer from 'nodemailer';
+import { serializeDocument } from '@/lib/serialize';
+import { BlogSettings } from '@/types/blog-settings';
 
 export async function POST(req: Request) {
   try {
@@ -9,7 +11,7 @@ export async function POST(req: Request) {
     await connectToDatabase();
     
     // Obter dados do formulário
-    const { name, email, subject, message } = await req.json();
+    const { name, email, subject, message, phone } = await req.json();
     
     // Validar dados
     if (!name || !email || !subject || !message) {
@@ -19,8 +21,9 @@ export async function POST(req: Request) {
       );
     }
     
-    // Buscar configurações do blog
-    const blogSettings = await BlogSettingsModel.findOne().lean();
+    // Buscar configurações do blog e serializar
+    const blogSettingsDoc = await BlogSettingsModel.findOne().lean();
+    const blogSettings = blogSettingsDoc ? serializeDocument(blogSettingsDoc) as BlogSettings : null;
     
     if (!blogSettings) {
       return NextResponse.json(
@@ -30,7 +33,7 @@ export async function POST(req: Request) {
     }
     
     // Verificar se as configurações de SMTP estão definidas
-    if (!blogSettings.smtp || !blogSettings.smtp.host || !blogSettings.smtp.auth.user) {
+    if (!blogSettings?.smtp?.host || !blogSettings?.smtp?.auth?.user) {
       return NextResponse.json(
         { error: 'Configurações de SMTP não definidas' },
         { status: 500 }
@@ -38,7 +41,7 @@ export async function POST(req: Request) {
     }
     
     // Definir o destinatário do email
-    const recipient = blogSettings.contactForm?.recipientEmail || blogSettings.contactEmail;
+    const recipient = blogSettings?.contactForm?.recipientEmail || blogSettings?.contactEmail;
     
     if (!recipient) {
       return NextResponse.json(
@@ -60,15 +63,16 @@ export async function POST(req: Request) {
     
     // Configurar o email
     const mailOptions = {
-      from: blogSettings.smtp.from || `"${blogSettings.name}" <${blogSettings.smtp.auth.user}>`,
+      from: blogSettings.smtp.from || `"${blogSettings.name || 'Blog'}" <${blogSettings.smtp.auth.user}>`,
       to: recipient,
       replyTo: email,
       subject: `[Formulário de Contato] ${subject}`,
-      text: `Nome: ${name}\nEmail: ${email}\nAssunto: ${subject}\n\nMensagem:\n${message}`,
+      text: `Nome: ${name}\nEmail: ${email}\nWhatsApp: ${phone || 'Não informado'}\nAssunto: ${subject}\n\nMensagem:\n${message}`,
       html: `
         <h2>Nova mensagem do formulário de contato</h2>
         <p><strong>Nome:</strong> ${name}</p>
         <p><strong>Email:</strong> ${email}</p>
+        <p><strong>WhatsApp:</strong> ${phone || 'Não informado'}</p>
         <p><strong>Assunto:</strong> ${subject}</p>
         <h3>Mensagem:</h3>
         <p>${message.replace(/\n/g, '<br>')}</p>
