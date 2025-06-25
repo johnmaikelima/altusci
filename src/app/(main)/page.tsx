@@ -9,6 +9,10 @@ import PageModel from '@/models/page';
 import { redirect } from 'next/navigation';
 // Importar o componente cliente para garantir que o manifesto seja gerado corretamente
 import MainPageClient from './page.client';
+// Importar função para serializar dados
+import { serializeData } from '@/lib/utils/serialize';
+// Importar o componente de botão WhatsApp fixo
+import GlobalWhatsAppButton from '@/components/global-whatsapp-button';
 
 // Configurações para forçar renderização dinâmica e resolver problemas de build
 export const dynamic = 'force-dynamic';
@@ -16,6 +20,45 @@ export const runtime = 'nodejs';
 
 // Desabilitar cache para garantir que sempre tenhamos os dados mais recentes
 export const revalidate = 0; // Isso força o Next.js a revalidar a página a cada requisição
+
+// Gerar metadata dinamicamente com base nas configurações do blog e da página inicial configurada
+export async function generateMetadata() {
+  await connectToDatabase();
+  
+  try {
+    // Buscar configurações do blog
+    const blogSettings = await getBlogSettings();
+    
+    // Buscar configurações da página inicial
+    const homePageConfig = await getHomePageConfig();
+    
+    // Definir o título com base na configuração da página inicial
+    let pageTitle = blogSettings.name;
+    
+    // Se a página inicial for personalizada, usar o título da página/categoria/post configurado
+    if (homePageConfig.type !== 'default' && homePageConfig.title) {
+      pageTitle = homePageConfig.title;
+    }
+    
+    // Definir o título diretamente no head do HTML para garantir que seja exibido corretamente
+    // Usar formato absoluto para evitar que Next.js adicione o URL ao título
+    return {
+      title: {
+        absolute: pageTitle,
+      },
+      description: blogSettings.description,
+    };
+  } catch (error) {
+    console.error('Erro ao gerar metadata:', error);
+    // Em caso de erro, usar um título padrão
+    return {
+      title: {
+        absolute: 'ALTUS',
+      },
+      description: 'Manutenção de Notebook com a Altustec',
+    };
+  }
+}
 
 // Definindo a interface Post para uso na página
 interface Post {
@@ -54,9 +97,12 @@ async function getFeaturedCategories(): Promise<Category[]> {
     .limit(4)
     .lean();
   
+  // Serializar os dados para evitar avisos de objetos MongoDB
+  const serializedCategories = serializeData(categories);
+  
   // Formatar as categorias para o formato esperado pelo frontend
-  return categories.map((category: any) => ({
-    id: category._id.toString(),
+  return serializedCategories.map((category: any) => ({
+    id: category._id.toString ? category._id.toString() : category._id,
     name: category.name,
     slug: category.slug,
     description: category.description || ''
@@ -74,9 +120,12 @@ async function getRecentPosts(): Promise<Post[]> {
     .populate('category', 'name slug')
     .lean();
   
+  // Serializar os dados para evitar avisos de objetos MongoDB
+  const serializedPosts = serializeData(posts);
+  
   // Formatar os posts para o formato esperado pelo frontend
-  return posts.map((post: any) => ({
-    id: post._id.toString(),
+  return serializedPosts.map((post: any) => ({
+    id: post._id.toString ? post._id.toString() : post._id,
     title: post.title,
     slug: post.slug,
     content: post.content,
@@ -109,24 +158,120 @@ async function getHomePageConfig() {
       return { type: 'default' };
     }
     
-    return settings.homePage;
+    // Serializar os dados para evitar avisos de objetos MongoDB
+    return serializeData(settings.homePage);
   } catch (error) {
     console.error('Erro ao buscar configurações da página inicial:', error);
     return { type: 'default' };
   }
 }
 
+// Função para buscar configurações do blog
+async function getBlogSettings() {
+  await connectToDatabase();
+  
+  try {
+    // Buscar configurações do blog
+    let settings = await BlogSettingsModel.findOne().lean();
+    
+    // Se não encontrar configurações, criar um documento vazio para garantir que exista
+    if (!settings) {
+      const BlogSettingsModelWithStatics = BlogSettingsModel as any;
+      if (typeof BlogSettingsModelWithStatics.findOneOrCreate === 'function') {
+        settings = await BlogSettingsModelWithStatics.findOneOrCreate();
+      } else {
+        // Criar um documento vazio se não existir o método findOneOrCreate
+        settings = await BlogSettingsModel.create({});
+        return {
+          name: 'ALTUS',
+          description: 'Manutenção de Notebook com a Altustec',
+          whatsappConfig: {
+            number: '5511999999999',
+            message: 'Olá! Vim pelo site e gostaria de algumas informações.',
+            hoverText: 'Precisa de ajuda? Fale conosco!',
+            enabled: true
+          }
+        };
+      }
+    }
+    
+    // Garantir que as configurações do WhatsApp estejam presentes
+    const whatsappConfig = settings.whatsappConfig || {
+      number: '5511999999999',
+      message: 'Olá! Vim pelo site e gostaria de algumas informações.',
+      hoverText: 'Precisa de ajuda? Fale conosco!',
+      enabled: true
+    };
+    
+    // Serializar os dados para evitar avisos de objetos MongoDB
+    return serializeData({
+      ...settings,
+      whatsappConfig
+    });
+  } catch (error) {
+    console.error('Erro ao buscar configurações do blog:', error);
+    // Em caso de erro, usar valores padrão
+    return {
+      name: 'ALTUS',
+      description: 'Manutenção de Notebook com a Altustec',
+      whatsappConfig: {
+        number: '5511999999999',
+        message: 'Olá! Vim pelo site e gostaria de algumas informações.',
+        hoverText: 'Precisa de ajuda? Fale conosco!',
+        enabled: true
+      }
+    };
+  }
+}
+
 export default async function Home() {
-  // Verificar a configuração da página inicial
+  // Buscar configuração da página inicial
   const homePageConfig = await getHomePageConfig();
   
-  // Redirecionar para o conteúdo apropriado com base na configuração
-  if (homePageConfig.type === 'page' && homePageConfig.slug) {
-    redirect(`/${homePageConfig.slug}`);
-  } else if (homePageConfig.type === 'category' && homePageConfig.slug) {
-    redirect(`/categorias/${homePageConfig.slug}`);
-  } else if (homePageConfig.type === 'post' && homePageConfig.slug) {
-    redirect(`/blog/${homePageConfig.slug}`);
+  // Buscar configurações do blog para o botão de WhatsApp
+  const blogSettings = await getBlogSettings();
+  
+  // Se a configuração da página inicial não for 'default', vamos renderizar um componente
+  // cliente que vai lidar com o redirecionamento, mas primeiro garantir que o botão de WhatsApp seja exibido
+  if (homePageConfig.type !== 'default' && homePageConfig.slug) {
+    return (
+      <div className="w-full">
+        {/* Adiciona o botão global de WhatsApp que será sempre exibido, antes de qualquer outro componente */}
+        <GlobalWhatsAppButton 
+          config={{
+            number: blogSettings.whatsappConfig?.number || '5511999999999',
+            message: blogSettings.whatsappConfig?.message || 'Olá! Vim pelo site e gostaria de algumas informações.',
+            hoverText: blogSettings.whatsappConfig?.hoverText || 'Precisa de ajuda? Fale conosco!',
+            enabled: true
+          }}
+        />
+        
+        {/* Adiciona um div com estilo inline para garantir que o botão seja visível */}
+        <div 
+          id="whatsapp-button-container" 
+          style={{
+            position: 'fixed',
+            bottom: '20px',
+            right: '20px',
+            zIndex: 99999,
+            visibility: 'visible',
+            opacity: 1,
+            display: 'block'
+          }}
+        />
+        
+        <MainPageClient 
+          forceWhatsAppButton={true}
+          whatsappConfig={{
+            number: blogSettings.whatsappConfig?.number || '5511999999999',
+            message: blogSettings.whatsappConfig?.message || 'Olá! Vim pelo site e gostaria de algumas informações.',
+            hoverText: blogSettings.whatsappConfig?.hoverText || 'Precisa de ajuda? Fale conosco!',
+            enabled: true // Força habilitado
+          }}
+          redirectConfig={homePageConfig}
+        />
+      </div>
+    );
   }
   
   // Se não houver configuração específica ou for 'default', renderizar a página inicial padrão
@@ -138,7 +283,7 @@ export default async function Home() {
 
   return (
     <div className="w-full">
-      {/* Componente cliente para garantir que o manifesto seja gerado corretamente */}
+      {/* Componente cliente para garantir que o manifesto seja gerado corretamente e o botão de WhatsApp seja exibido */}
       <MainPageClient />
       {/* Hero Section */}
       <section className="py-16 md:py-24">
@@ -323,6 +468,20 @@ export default async function Home() {
           </div>
         </div>
       </section>
+      
+      {/* Renderiza o componente cliente com configurações de WhatsApp para garantir que o botão seja exibido */}
+      <MainPageClient 
+        forceWhatsAppButton={true}
+        whatsappConfig={{
+          number: blogSettings.whatsappConfig?.number || '5511999999999',
+          message: blogSettings.whatsappConfig?.message || 'Olá! Vim pelo site e gostaria de algumas informações.',
+          hoverText: blogSettings.whatsappConfig?.hoverText || 'Precisa de ajuda? Fale conosco!',
+          enabled: true
+        }}
+        redirectConfig={homePageConfig.type !== 'default' ? homePageConfig : undefined}
+      />
+      
+      {/* O botão de WhatsApp global já é renderizado pelo layout principal */}
     </div>
   );
 }

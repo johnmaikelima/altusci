@@ -1,7 +1,7 @@
 'use client';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Palette, Settings, Globe, Bell, Shield, User, Menu, Image as ImageIcon } from 'lucide-react';
+import { Palette, Settings, Globe, Bell, Shield, User, Menu, Image as ImageIcon, MessageCircle, Mail, MessageSquare, MapPin, Phone } from 'lucide-react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 
@@ -22,11 +22,46 @@ const settingsCards: SettingCard[] = [
     color: 'bg-purple-500/10 text-purple-500',
   },
   {
+    title: 'Email',
+    description: 'Configure SMTP e formulário de contato',
+    href: '/dashboard/settings/email',
+    icon: <Mail className="h-6 w-6" />,
+    color: 'bg-cyan-500/10 text-cyan-500',
+  },
+  {
+    title: 'WhatsApp',
+    description: 'Configure o botão flutuante de WhatsApp',
+    href: '/dashboard/settings/whatsapp',
+    icon: <MessageSquare className="h-6 w-6" />,
+    color: 'bg-green-500/10 text-green-500',
+  },
+  {
+    title: 'Endereço',
+    description: 'Configure o endereço do seu negócio',
+    href: '/dashboard/settings/address',
+    icon: <MapPin className="h-6 w-6" />,
+    color: 'bg-orange-500/10 text-orange-500',
+  },
+  {
+    title: 'Contato',
+    description: 'Configure os dados de contato',
+    href: '/dashboard/settings/contact',
+    icon: <Phone className="h-6 w-6" />,
+    color: 'bg-purple-500/10 text-purple-500',
+  },
+  {
     title: 'Geral',
     description: 'Configurações básicas do blog',
     href: '/dashboard/settings/general',
     icon: <Settings className="h-6 w-6" />,
     color: 'bg-blue-500/10 text-blue-500',
+  },
+  {
+    title: 'WhatsApp',
+    description: 'Configure o botão flutuante de WhatsApp',
+    href: '/dashboard/settings/general#whatsapp',
+    icon: <MessageCircle className="h-6 w-6" />,
+    color: 'bg-green-500/10 text-green-500',
   },
   {
     title: 'Slider',

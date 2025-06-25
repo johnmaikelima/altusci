@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/mongoose';
 import CategoryModel from '@/models/category';
 import PostModel from '@/models/post';
+import { updateSitemap } from '@/lib/sitemap-utils';
 
 export async function GET(
   req: NextRequest,
@@ -70,6 +71,9 @@ export async function PUT(
       return NextResponse.json({ error: 'Categoria não encontrada' }, { status: 404 });
     }
     
+    // Atualizar o sitemap após modificar a categoria
+    await updateSitemap();
+    
     // Formatar a categoria para o frontend
     const formattedCategory = {
       _id: updatedCategory._id.toString(),
@@ -109,6 +113,9 @@ export async function DELETE(
     
     // Excluir categoria
     await CategoryModel.findByIdAndDelete(params.id);
+    
+    // Atualizar o sitemap após excluir a categoria
+    await updateSitemap();
     
     return NextResponse.json({ message: 'Categoria excluída com sucesso' });
   } catch (error) {

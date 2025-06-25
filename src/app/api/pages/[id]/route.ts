@@ -3,6 +3,7 @@ import { connectToDatabase } from '@/lib/mongoose';
 import PageModel from '@/models/page';
 import { withAdminAuth } from '@/app/api/users/middleware';
 import { serializeMongoDBObject } from '@/lib/mongodb-helpers';
+import { updateSitemap } from '@/lib/sitemap-utils';
 
 // GET - Buscar uma página específica pelo ID
 export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
@@ -48,6 +49,9 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
         return NextResponse.json({ error: 'Página não encontrada' }, { status: 404 });
       }
       
+      // Atualizar o sitemap após atualizar a página
+      await updateSitemap();
+      
       // Serializar o objeto do MongoDB antes de retornar
       const serializedPage = serializeMongoDBObject(page);
       
@@ -81,6 +85,9 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
       if (!page) {
         return NextResponse.json({ error: 'Página não encontrada' }, { status: 404 });
       }
+      
+      // Atualizar o sitemap após excluir a página
+      await updateSitemap();
       
       return NextResponse.json({ success: true });
     } catch (error) {

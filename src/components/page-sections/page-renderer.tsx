@@ -16,6 +16,9 @@ interface Section {
   buttonLink?: string;
   backgroundColor?: string;
   textColor?: string;
+  imageUrl?: string;
+  style?: string;
+  images?: string[];
   items?: any[];
   order?: number;
 }
@@ -47,6 +50,9 @@ export function PageRenderer({ sections }: PageRendererProps) {
                 buttonLink={section.buttonLink}
                 backgroundColor={section.backgroundColor}
                 textColor={section.textColor}
+                imageUrl={section.imageUrl}
+                style={section.style}
+                images={section.images}
               />
             );
           

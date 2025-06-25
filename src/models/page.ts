@@ -11,6 +11,8 @@ const SectionSchema = new Schema({
   buttonLink: { type: String },
   backgroundColor: { type: String, default: '#ffffff' },
   textColor: { type: String, default: '#000000' },
+  style: { type: String, default: 'default' }, // Estilo da seção (default, carousel, etc.)
+  images: [{ type: String }], // Array de URLs de imagens para carrossel
   items: [{ // Para seções com múltiplos itens (cards, features, testimonials)
     title: { type: String },
     subtitle: { type: String },

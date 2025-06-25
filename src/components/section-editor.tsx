@@ -11,6 +11,7 @@ import { PageRenderer } from './page-sections/page-renderer';
 
 interface Section {
   type: string;
+  style?: string; // Estilo da seção (default, carousel, etc)
   title?: string;
   subtitle?: string;
   content?: string;
@@ -19,6 +20,7 @@ interface Section {
   backgroundColor?: string;
   textColor?: string;
   imageUrl?: string;
+  images?: string[]; // Array de URLs de imagens para o carrossel
   items?: any[];
   order?: number;
 }

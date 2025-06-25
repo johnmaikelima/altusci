@@ -11,6 +11,7 @@ interface MenuItem {
   name: string;
   url: string;
   order: number;
+  isCTA?: boolean;
 }
 
 interface Menu {
@@ -78,25 +79,47 @@ export default function MenusSettingsPage() {
   // Buscar configurações do blog
   const fetchSettings = async () => {
     try {
+      console.log('Buscando configurações do blog...');
       setIsLoading(true);
-      const response = await fetch('/api/settings/blog');
+      
+      // Usar cache: 'no-store' para garantir que sempre busque dados atualizados
+      const response = await fetch('/api/settings/blog', { cache: 'no-store' });
       const data = await response.json();
       
-      if (data.settings) {
+      console.log('Dados recebidos da API:', data);
+      
+      // Verificar se temos configurações válidas
+      if (data && (data.settings || data._id)) {
+        // Determinar onde estão as configurações (na propriedade settings ou diretamente no objeto)
+        const settingsData = data.settings || data;
+        console.log('Dados de configurações:', settingsData);
+        
+        // Garantir que temos um array de menus válido
+        if (!settingsData.menus || !Array.isArray(settingsData.menus)) {
+          console.log('Nenhum menu válido encontrado, inicializando array vazio');
+          settingsData.menus = [];
+        }
+        
+        console.log('Menus recebidos da API:', settingsData.menus);
+        
         // Migrar menus antigos para o novo formato se necessário
-        if (!data.settings.menus || data.settings.menus.length === 0) {
+        if (settingsData.menus.length === 0) {
+          console.log('Nenhum menu encontrado, verificando menus legados...');
+          
           // Se não houver menus no novo formato, mas houver no formato antigo
-          if (data.settings.legacyMenuItems && data.settings.legacyMenuItems.length > 0) {
-            data.settings.menus = [
+          if (settingsData.legacyMenuItems && settingsData.legacyMenuItems.length > 0) {
+            console.log('Usando menus legados:', settingsData.legacyMenuItems);
+            settingsData.menus = [
               {
                 name: 'Menu Principal',
                 location: 'header',
-                items: data.settings.legacyMenuItems
+                items: settingsData.legacyMenuItems
               }
             ];
           } else {
             // Inicializar com um menu vazio
-            data.settings.menus = [
+            console.log('Criando menu padrão vazio');
+            settingsData.menus = [
               {
                 name: 'Menu Principal',
                 location: 'header',
@@ -106,7 +129,16 @@ export default function MenusSettingsPage() {
           }
         }
         
-        setSettings(data.settings);
+        console.log('Configurações finais a serem definidas no estado:', settingsData);
+        setSettings(settingsData);
+        
+        // Verificar se os menus foram definidos corretamente após a atualização do estado
+        setTimeout(() => {
+          console.log('Estado atual após fetchSettings:', settings);
+        }, 100);
+      } else {
+        console.error('Dados recebidos da API não contêm configurações válidas:', data);
+        toast.error('Erro ao carregar configurações do blog: Dados inválidos');
       }
     } catch (error) {
       console.error('Erro ao buscar configurações:', error);
@@ -143,7 +175,7 @@ export default function MenusSettingsPage() {
         setCategorySuggestions(suggestions);
       }
     } catch (error) {
-      console.error('Erro ao buscar sugestões:', error);
+      console.error('Erro ao buscar posts e categorias:', error);
     }
   };
 
@@ -152,29 +184,50 @@ export default function MenusSettingsPage() {
     try {
       setIsSaving(true);
       
-      // Ordenar itens de menu por ordem
+      console.log('Salvando configurações...');
+      console.log('Menus antes de salvar:', settings.menus);
+      
+      // Garantir que todos os itens tenham ordens sequenciais antes de salvar
       const updatedSettings = {
         ...settings,
-        menus: settings.menus.map(menu => ({
-          ...menu,
-          items: [...menu.items].sort((a, b) => a.order - b.order)
-        }))
+        menus: settings.menus.map(menu => {
+          // Criar uma cópia dos itens
+          const sortedItems = [...menu.items];
+          
+          // Atribuir ordens sequenciais (0, 1, 2...) para cada item
+          sortedItems.forEach((item, idx) => {
+            item.order = idx;
+          });
+          
+          return {
+            ...menu,
+            items: sortedItems
+          };
+        })
       };
       
+      console.log('Menus ordenados para salvar:', updatedSettings.menus);
+      
       const response = await fetch('/api/settings/blog', {
-        method: 'POST',
+        method: 'PUT',
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ settings: updatedSettings })
+        body: JSON.stringify({ menus: updatedSettings.menus })
       });
       
       const data = await response.json();
+      console.log('Resposta da API após salvar:', data);
       
       if (data.success) {
         toast.success('Configurações de menus salvas com sucesso!');
+        
+        // Recarregar as configurações para garantir que temos os dados mais recentes
+        console.log('Recarregando configurações após salvar...');
+        await fetchSettings();
       } else {
         toast.error('Erro ao salvar configurações');
+        console.error('Erro retornado pela API:', data.error || 'Erro desconhecido');
       }
     } catch (error) {
       console.error('Erro ao salvar configurações:', error);
@@ -186,54 +239,80 @@ export default function MenusSettingsPage() {
 
   // Adicionar um novo menu
   const addMenu = () => {
-    setSettings(prev => ({
-      ...prev,
-      menus: [
-        ...prev.menus,
-        {
-          name: `Novo Menu ${prev.menus.length + 1}`,
-          location: 'header',
-          items: []
-        }
-      ]
-    }));
-    // Selecionar o novo menu
-    setActiveMenuIndex(settings.menus.length);
+    console.log('Adicionando novo menu...');
+    console.log('Menus atuais:', settings.menus);
+    
+    // Garantir que settings.menus seja um array válido
+    const currentMenus = Array.isArray(settings.menus) ? [...settings.menus] : [];
+    const newMenuIndex = currentMenus.length;
+    
+    // Criar o novo menu
+    const newMenu = {
+      name: `Novo Menu ${newMenuIndex + 1}`,
+      location: 'header',
+      items: []
+    };
+    
+    console.log('Novo menu a ser adicionado:', newMenu);
+    
+    // Atualizar o estado com o novo menu
+    setSettings(prev => {
+      // Garantir que prev.menus seja um array válido
+      const prevMenus = Array.isArray(prev.menus) ? prev.menus : [];
+      
+      const updatedSettings = {
+        ...prev,
+        menus: [...prevMenus, newMenu]
+      };
+      
+      console.log('Configurações atualizadas:', updatedSettings);
+      return updatedSettings;
+    });
+    
+    // Selecionar o novo menu após a atualização do estado
+    // Usamos um timeout para garantir que o estado foi atualizado
+    setTimeout(() => {
+      console.log('Menus após adição:', settings.menus);
+      setActiveMenuIndex(newMenuIndex);
+      
+      // Salvar automaticamente as configurações para persistir o novo menu
+      saveSettings();
+    }, 300);
   };
 
   // Remover um menu
   const removeMenu = (index: number) => {
-    setSettings(prev => ({
-      ...prev,
-      menus: prev.menus.filter((_, i) => i !== index)
-    }));
+    if (settings.menus.length <= 1) return;
     
-    // Ajustar o índice ativo se necessário
-    if (activeMenuIndex >= index && activeMenuIndex > 0) {
-      setActiveMenuIndex(activeMenuIndex - 1);
-    } else if (settings.menus.length <= 1) {
-      setActiveMenuIndex(0);
-    }
+    setSettings(prev => {
+      const newMenus = [...prev.menus];
+      newMenus.splice(index, 1);
+      
+      return {
+        ...prev,
+        menus: newMenus
+      };
+    });
   };
 
   // Atualizar nome do menu
   const updateMenuName = (index: number, name: string) => {
-    setSettings(prev => ({
-      ...prev,
-      menus: prev.menus.map((menu, i) => 
-        i === index ? { ...menu, name } : menu
-      )
-    }));
+    setSettings(prev => {
+      const updatedMenus = [...prev.menus];
+      updatedMenus[index] = { ...updatedMenus[index], name };
+      
+      return { ...prev, menus: updatedMenus };
+    });
   };
 
   // Atualizar localização do menu
   const updateMenuLocation = (index: number, location: string) => {
-    setSettings(prev => ({
-      ...prev,
-      menus: prev.menus.map((menu, i) => 
-        i === index ? { ...menu, location } : menu
-      )
-    }));
+    setSettings(prev => {
+      const updatedMenus = [...prev.menus];
+      updatedMenus[index] = { ...updatedMenus[index], location };
+      
+      return { ...prev, menus: updatedMenus };
+    });
   };
 
   // Adicionar item ao menu
@@ -243,15 +322,19 @@ export default function MenusSettingsPage() {
       const menuItems = [...updatedMenus[menuIndex].items];
       
       // Encontrar a maior ordem atual
-      const maxOrder = menuItems.length > 0 
-        ? Math.max(...menuItems.map(item => item.order))
-        : -1;
+      let maxOrder = -1;
+      for (const item of menuItems) {
+        if (item.order > maxOrder) {
+          maxOrder = item.order;
+        }
+      }
       
-      // Adicionar novo item
+      // Adicionar novo item com ordem incremental
       menuItems.push({
         name: 'Novo Item',
         url: '/',
-        order: maxOrder + 1
+        order: maxOrder + 1,
+        isCTA: false
       });
       
       updatedMenus[menuIndex] = {
@@ -293,7 +376,7 @@ export default function MenusSettingsPage() {
   };
 
   // Atualizar item do menu
-  const updateMenuItem = (menuIndex: number, itemIndex: number, field: keyof MenuItem, value: string | number) => {
+  const updateMenuItem = (menuIndex: number, itemIndex: number, field: keyof MenuItem, value: string | number | boolean) => {
     setSettings(prev => {
       const updatedMenus = [...prev.menus];
       const menuItems = [...updatedMenus[menuIndex].items];
@@ -323,18 +406,30 @@ export default function MenusSettingsPage() {
       const updatedMenus = [...prev.menus];
       const menuItems = [...updatedMenus[menuIndex].items];
       
-      // Trocar a ordem dos itens
-      const temp = menuItems[itemIndex].order;
-      menuItems[itemIndex].order = menuItems[itemIndex - 1].order;
-      menuItems[itemIndex - 1].order = temp;
+      // Trocar os itens de posição no array
+      const itemToMove = {...menuItems[itemIndex]};
+      const itemAbove = {...menuItems[itemIndex - 1]};
       
-      // Reordenar o array
-      menuItems.sort((a, b) => a.order - b.order);
+      // Trocar as ordens
+      const tempOrder = itemToMove.order;
+      itemToMove.order = itemAbove.order;
+      itemAbove.order = tempOrder;
+      
+      // Substituir os itens no array
+      menuItems[itemIndex] = itemAbove;
+      menuItems[itemIndex - 1] = itemToMove;
+      
+      // Garantir que todas as ordens sejam sequenciais
+      menuItems.forEach((item, idx) => {
+        item.order = idx;
+      });
       
       updatedMenus[menuIndex] = {
         ...updatedMenus[menuIndex],
         items: menuItems
       };
+      
+      console.log('Menu após mover para cima:', updatedMenus[menuIndex]);
       
       return {
         ...prev,
@@ -342,93 +437,81 @@ export default function MenusSettingsPage() {
       };
     });
   };
-
-  // Mover item para baixo
-  const moveItemDown = (menuIndex: number, itemIndex: number) => {
-    const menuItems = settings.menus[menuIndex].items;
-    if (itemIndex === menuItems.length - 1) return;
+  
+  // Remover um menu
+  const removeMenu = (index: number) => {
+    if (settings.menus.length <= 1) return;
     
     setSettings(prev => {
-      const updatedMenus = [...prev.menus];
-      const menuItems = [...updatedMenus[menuIndex].items];
-      
-      // Trocar a ordem dos itens
-      const temp = menuItems[itemIndex].order;
-      menuItems[itemIndex].order = menuItems[itemIndex + 1].order;
-      menuItems[itemIndex + 1].order = temp;
-      
-      // Reordenar o array
-      menuItems.sort((a, b) => a.order - b.order);
-      
-      updatedMenus[menuIndex] = {
-        ...updatedMenus[menuIndex],
-        items: menuItems
-      };
+      const newMenus = [...prev.menus];
+      newMenus.splice(index, 1);
       
       return {
         ...prev,
-        menus: updatedMenus
+        menus: newMenus
       };
     });
-  };
+};
 
-  // Atualizar termo de pesquisa e mostrar sugestões
-  const handleSearchChange = (menuIndex: number, itemIndex: number, value: string) => {
-    updateMenuItem(menuIndex, itemIndex, 'url', value);
-    setSearchTerm(value);
-    setShowSuggestions(true);
+// Atualizar nome do menu
+const updateMenuName = (index: number, name: string) => {
+setSettings(prev => {
+  const updatedMenus = [...prev.menus];
+  updatedMenus[index] = { ...updatedMenus[index], name };
+      
+  return { ...prev, menus: updatedMenus };
+});
+};
     setActiveMenuItemIndex(itemIndex);
+    setShowSuggestions(true);
   };
 
   // Selecionar sugestão
   const handleSelectSuggestion = (menuIndex: number, itemIndex: number, url: string, name?: string) => {
     updateMenuItem(menuIndex, itemIndex, 'url', url);
     
-    // Se o nome do item estiver vazio ou for "Novo Item", atualize-o com o nome da sugestão
-    const currentName = settings.menus[menuIndex].items[itemIndex].name;
-    if (name && (currentName === 'Novo Item' || currentName === '')) {
+    if (name) {
       updateMenuItem(menuIndex, itemIndex, 'name', name);
     }
     
     setShowSuggestions(false);
   };
 
-  // Renderizar o componente
   return (
-    <div>
+    <div className="container mx-auto py-6">
       <CardHeader>
         <CardTitle>Configurações de Menus</CardTitle>
         <CardDescription>
-          Configure os menus do seu blog. Você pode criar múltiplos menus e definir onde cada um será exibido.
+          Configure os menus do seu blog. Você pode criar múltiplos menus para diferentes áreas do site.
         </CardDescription>
       </CardHeader>
       
       <CardContent>
         {isLoading ? (
-          <div className="flex justify-center items-center py-8">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <div className="flex justify-center items-center py-12">
+            <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
           </div>
         ) : (
           <>
-            {/* Seleção de menu ativo */}
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center space-x-2">
+            {/* Seleção de menu */}
+            <div className="mb-6">
+              <h3 className="text-lg font-medium mb-2">Selecione o Menu</h3>
+              <div className="flex flex-wrap gap-2">
                 {settings.menus.map((menu, index) => (
                   <Button
                     key={index}
                     variant={activeMenuIndex === index ? "default" : "outline"}
                     onClick={() => setActiveMenuIndex(index)}
-                    className="mr-2"
+                    className="mb-2"
                   >
-                    {menu.name}
+                    {menu.name} ({menuLocations.find(loc => loc.id === menu.location)?.name || menu.location})
                   </Button>
                 ))}
-              </div>
-              
-              <div className="flex items-center space-x-2">
+                
                 <Button
                   variant="outline"
                   onClick={addMenu}
+                  className="mb-2"
                 >
                   <Plus className="h-4 w-4 mr-2" />
                   Novo Menu
@@ -438,7 +521,7 @@ export default function MenusSettingsPage() {
                   <Button
                     variant="outline"
                     onClick={() => removeMenu(activeMenuIndex)}
-                    className="text-red-500 hover:text-red-700"
+                    className="text-red-500 hover:text-red-700 mb-2"
                   >
                     <Trash2 className="h-4 w-4 mr-2" />
                     Excluir Menu
@@ -472,14 +555,31 @@ export default function MenusSettingsPage() {
               />
             )}
             
-            <div className="flex justify-end mt-6">
+            <div className="flex justify-between mt-6">
+              <Button
+                onClick={() => console.log('Configurações atuais:', settings)}
+                variant="outline"
+                className="bg-gray-100 hover:bg-gray-200"
+              >
+                Verificar Dados
+              </Button>
+              
               <Button
                 onClick={saveSettings}
                 disabled={isSaving}
+                className="bg-blue-600 hover:bg-blue-700"
               >
-                {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                <Save className="mr-2 h-4 w-4" />
-                Salvar Configurações
+                {isSaving ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Salvando...
+                  </>
+                ) : (
+                  <>
+                    <Save className="mr-2 h-4 w-4" />
+                    Salvar Configurações
+                  </>
+                )}
               </Button>
             </div>
           </>

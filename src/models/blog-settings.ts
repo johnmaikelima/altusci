@@ -23,6 +23,29 @@ export interface IBlogSettings extends Document {
   contactEmail: string;
   contactPhone: string;
   contactWhatsapp: string;
+  whatsappConfig: {
+    number: string;
+    message: string;
+    hoverText: string;
+    enabled: boolean;
+  };
+  smtp: {
+    host: string;
+    port: number;
+    secure: boolean;
+    auth: {
+      user: string;
+      pass: string;
+    };
+    from: string; // Email de origem para envio de mensagens
+  };
+  contactForm: {
+    enabled: boolean;
+    recipientEmail: string;
+    captchaEnabled: boolean;
+    successMessage: string;
+    errorMessage: string;
+  };
   address: {
     street: string;
     number: string;
@@ -59,6 +82,24 @@ const BlogSettingsSchema: Schema = new Schema(
       trim: true,
       maxlength: [100, 'O nome não pode ter mais de 100 caracteres'],
       default: 'Meu Blog'
+    },
+    whatsappConfig: {
+      number: {
+        type: String,
+        default: ''
+      },
+      message: {
+        type: String,
+        default: 'Olá! Vim pelo site e gostaria de algumas informações.'
+      },
+      hoverText: {
+        type: String,
+        default: 'Precisa de ajuda? Fale conosco!'
+      },
+      enabled: {
+        type: Boolean,
+        default: false
+      }
     },
     homePage: {
       type: {
@@ -112,6 +153,56 @@ const BlogSettingsSchema: Schema = new Schema(
     contactWhatsapp: {
       type: String,
       default: ''
+    },
+    smtp: {
+      host: {
+        type: String,
+        default: ''
+      },
+      port: {
+        type: Number,
+        default: 587
+      },
+      secure: {
+        type: Boolean,
+        default: false
+      },
+      auth: {
+        user: {
+          type: String,
+          default: ''
+        },
+        pass: {
+          type: String,
+          default: ''
+        }
+      },
+      from: {
+        type: String,
+        default: ''
+      }
+    },
+    contactForm: {
+      enabled: {
+        type: Boolean,
+        default: true
+      },
+      recipientEmail: {
+        type: String,
+        default: ''
+      },
+      captchaEnabled: {
+        type: Boolean,
+        default: true
+      },
+      successMessage: {
+        type: String,
+        default: 'Sua mensagem foi enviada com sucesso! Entraremos em contato em breve.'
+      },
+      errorMessage: {
+        type: String,
+        default: 'Ocorreu um erro ao enviar sua mensagem. Por favor, tente novamente.'
+      }
     },
     address: {
       street: {

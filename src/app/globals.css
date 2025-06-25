@@ -74,3 +74,25 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Estilos para o botão flutuante de WhatsApp */
+.whatsapp-button-container {
+  visibility: visible !important;
+  opacity: 1 !important;
+  z-index: 9999 !important;
+}
+
+.whatsapp-visible {
+  animation: fadeIn 0.5s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

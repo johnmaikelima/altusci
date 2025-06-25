@@ -1,6 +1,8 @@
 import Header from '@/components/layout/header';
 import Footer from '@/components/layout/footer';
 import Topbar from '@/components/layout/topbar';
+import GlobalWhatsAppButton from '@/components/global-whatsapp-button';
+import { Toaster } from '@/components/ui/toaster';
 import { Metadata } from 'next';
 import { connectToDatabase } from '@/lib/mongoose';
 import CategoryModel from '@/models/category';
@@ -45,6 +47,13 @@ interface SocialMedia {
   youtube?: string;
 }
 
+interface WhatsappConfig {
+  number: string;
+  message: string;
+  hoverText: string;
+  enabled: boolean;
+}
+
 interface BlogSettings {
   _id?: string;
   name: string;
@@ -53,6 +62,8 @@ interface BlogSettings {
   menus: Menu[];
   contactEmail?: string;
   contactPhone?: string;
+  contactWhatsapp?: string;
+  whatsappConfig?: WhatsappConfig;
   address?: Address;
   socialMedia?: SocialMedia;
   legacyMenuItems?: MenuItem[];
@@ -67,20 +78,44 @@ export async function generateMetadata(): Promise<Metadata> {
   
   try {
     // Buscar configurações do blog
-    const settings = await BlogSettingsModel.findOne().lean() as BlogSettings || { 
-      name: 'Blog Moderno', 
-      description: 'Um blog sobre tecnologia e desenvolvimento web' 
-    };
+    let settings;
+    try {
+      // Tentativa de buscar as configurações do banco de dados
+      settings = await BlogSettingsModel.findOne().lean() as BlogSettings;
+      
+      // Se não encontrar configurações, criar um documento vazio para garantir que exista
+      if (!settings) {
+        const BlogSettingsModelWithStatics = BlogSettingsModel as any;
+        if (typeof BlogSettingsModelWithStatics.findOneOrCreate === 'function') {
+          settings = await BlogSettingsModelWithStatics.findOneOrCreate();
+        } else {
+          // Criar um documento vazio se não existir o método findOneOrCreate
+          settings = await BlogSettingsModel.create({});
+        }
+      }
+    } catch (error) {
+      console.error('Erro ao buscar configurações do blog:', error);
+      // Usar um valor padrão apenas em caso de erro
+      settings = { 
+        name: 'ALTUS', 
+        description: 'Manutenção de Notebook com a Altustec' 
+      };
+    }
     
+    // Forçar o título a ser o nome do blog sem sufixos
     return {
-      title: settings.name,
+      title: {
+        absolute: settings.name, // Força o título absoluto sem template
+      },
       description: settings.description,
     };
   } catch (error) {
     console.error('Erro ao buscar configurações do blog:', error);
     return {
-      title: 'Blog Moderno',
-      description: 'Um blog sobre tecnologia e desenvolvimento web',
+      title: {
+        absolute: 'ALTUS', // Força o título absoluto sem template
+      },
+      description: 'Manutenção de Notebook com a Altustec',
     };
   }
 };
@@ -111,11 +146,30 @@ async function getBlogSettings(): Promise<BlogSettings> {
   
   try {
     // Buscar configurações ou usar valores padrão
-    const settings = await BlogSettingsModel.findOne().lean() as any || {
-      name: 'Blog Moderno',
-      description: 'Um blog sobre tecnologia e desenvolvimento web',
-      logo: '/logo.png'
-    };
+    let settings;
+    try {
+      // Tentativa de buscar as configurações do banco de dados
+      settings = await BlogSettingsModel.findOne().lean() as any;
+      
+      // Se não encontrar configurações, criar um documento vazio para garantir que exista
+      if (!settings) {
+        const BlogSettingsModelWithStatics = BlogSettingsModel as any;
+        if (typeof BlogSettingsModelWithStatics.findOneOrCreate === 'function') {
+          settings = await BlogSettingsModelWithStatics.findOneOrCreate();
+        } else {
+          // Criar um documento vazio se não existir o método findOneOrCreate
+          settings = await BlogSettingsModel.create({});
+        }
+      }
+    } catch (error) {
+      console.error('Erro ao buscar configurações do blog:', error);
+      // Usar um valor padrão apenas em caso de erro
+      settings = {
+        name: 'ALTUS',
+        description: 'Manutenção de Notebook com a Altustec',
+        logo: '/logo.png'
+      };
+    }
     
     // Converter _id para string se existir
     if (settings._id) {
@@ -178,6 +232,19 @@ async function getBlogSettings(): Promise<BlogSettings> {
       youtube: settings.socialMedia.youtube || ''
     } : undefined;
     
+    // Serializar configuração do WhatsApp
+    const whatsappConfig = settings.whatsappConfig ? {
+      number: settings.whatsappConfig.number || '',
+      message: settings.whatsappConfig.message || 'Olá! Vim pelo site e gostaria de algumas informações.',
+      hoverText: settings.whatsappConfig.hoverText || 'Precisa de ajuda? Fale conosco!',
+      enabled: settings.whatsappConfig.enabled || false
+    } : {
+      number: '',
+      message: 'Olá! Vim pelo site e gostaria de algumas informações.',
+      hoverText: 'Precisa de ajuda? Fale conosco!',
+      enabled: false
+    };
+    
     // Retornar objeto serializado
     return {
       name: settings.name,
@@ -186,18 +253,27 @@ async function getBlogSettings(): Promise<BlogSettings> {
       menus: serializedMenus,
       contactEmail: settings.contactEmail || '',
       contactPhone: settings.contactPhone || '',
+      contactWhatsapp: settings.contactWhatsapp || '',
+      whatsappConfig,
       address: serializedAddress,
       socialMedia: serializedSocialMedia
     };
   } catch (error) {
     console.error('Erro ao buscar configurações do blog:', error);
     return {
-      name: 'Blog Moderno',
-      description: 'Um blog sobre tecnologia e desenvolvimento web',
+      name: 'ALTUS',
+      description: 'Manutenção de Notebook com a Altustec',
       logo: '/logo.png',
       menus: [],
       contactEmail: '',
       contactPhone: '',
+      contactWhatsapp: '',
+      whatsappConfig: {
+        number: '',
+        message: 'Olá! Vim pelo site e gostaria de algumas informações.',
+        hoverText: 'Precisa de ajuda? Fale conosco!',
+        enabled: false
+      },
       address: undefined,
       socialMedia: undefined
     };
@@ -223,6 +299,18 @@ export default async function MainSiteLayout({
         </div>
       </main>
       <Footer blogSettings={blogSettings} />
+      {/* Botão global de WhatsApp que será exibido apenas quando habilitado nas configurações */}
+      {blogSettings.whatsappConfig?.enabled && (
+        <GlobalWhatsAppButton 
+          config={{
+            number: blogSettings.whatsappConfig?.number || blogSettings.contactWhatsapp || '',
+            message: blogSettings.whatsappConfig?.message || 'Olá! Vim pelo site e gostaria de algumas informações.',
+            hoverText: blogSettings.whatsappConfig?.hoverText || 'Precisa de ajuda? Fale conosco!',
+            enabled: true
+          }}
+        />
+      )}
+      <Toaster />
     </div>
   );
 }

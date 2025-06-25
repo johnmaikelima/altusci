@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/mongoose';
 import PostModel from '@/models/post';
 import mongoose from 'mongoose';
-import { generateSitemapXml } from '../../sitemap/generate/route';
+import { updateSitemap } from '@/lib/sitemap-utils';
 
 interface MongooseDocument {
   _id: mongoose.Types.ObjectId;
@@ -154,14 +154,14 @@ export async function PUT(request: Request, { params }: { params: { id: string }
       coverImage: updatedPost.coverImage || ''
     };
     
-    // Gerar o sitemap automaticamente se o post estiver publicado
+    // Atualizar o sitemap automaticamente se o post estiver publicado
     if (updatedPost.published) {
       try {
-        await generateSitemapXml();
+        await updateSitemap();
         console.log('Sitemap atualizado após atualização de post');
       } catch (sitemapError) {
         console.error('Erro ao atualizar sitemap:', sitemapError);
-        // Não interrompe o fluxo se houver erro na geração do sitemap
+        // Não interrompe o fluxo se houver erro na atualização do sitemap
       }
     }
     
@@ -196,11 +196,11 @@ export async function DELETE(request: Request, { params }: { params: { id: strin
     
     // Atualizar o sitemap após excluir um post
     try {
-      await generateSitemapXml();
+      await updateSitemap();
       console.log('Sitemap atualizado após exclusão de post');
     } catch (sitemapError) {
       console.error('Erro ao atualizar sitemap após exclusão:', sitemapError);
-      // Não interrompe o fluxo se houver erro na geração do sitemap
+      // Não interrompe o fluxo se houver erro na atualização do sitemap
     }
     
     return NextResponse.json({ 

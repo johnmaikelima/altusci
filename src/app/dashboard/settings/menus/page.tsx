@@ -187,13 +187,23 @@ export default function MenusSettingsPage() {
       console.log('Salvando configurações...');
       console.log('Menus antes de salvar:', settings.menus);
       
-      // Ordenar itens de menu por ordem
+      // Garantir que todos os itens tenham ordens sequenciais antes de salvar
       const updatedSettings = {
         ...settings,
-        menus: settings.menus.map(menu => ({
-          ...menu,
-          items: [...menu.items].sort((a, b) => a.order - b.order)
-        }))
+        menus: settings.menus.map(menu => {
+          // Criar uma cópia dos itens
+          const sortedItems = [...menu.items];
+          
+          // Atribuir ordens sequenciais (0, 1, 2...) para cada item
+          sortedItems.forEach((item, idx) => {
+            item.order = idx;
+          });
+          
+          return {
+            ...menu,
+            items: sortedItems
+          };
+        })
       };
       
       console.log('Menus ordenados para salvar:', updatedSettings.menus);
@@ -396,18 +406,22 @@ export default function MenusSettingsPage() {
       const updatedMenus = [...prev.menus];
       const menuItems = [...updatedMenus[menuIndex].items];
       
-      // Trocar a ordem dos itens
-      const temp = menuItems[itemIndex].order;
-      menuItems[itemIndex].order = menuItems[itemIndex - 1].order;
-      menuItems[itemIndex - 1].order = temp;
+      // Trocar os itens de posição no array
+      const temp = menuItems[itemIndex];
+      menuItems[itemIndex] = menuItems[itemIndex - 1];
+      menuItems[itemIndex - 1] = temp;
       
-      // Reordenar o array
-      menuItems.sort((a, b) => a.order - b.order);
+      // Garantir que todas as ordens sejam sequenciais
+      menuItems.forEach((item, idx) => {
+        item.order = idx;
+      });
       
       updatedMenus[menuIndex] = {
         ...updatedMenus[menuIndex],
         items: menuItems
       };
+      
+      console.log('Menu após mover para cima:', updatedMenus[menuIndex]);
       
       return {
         ...prev,
@@ -425,18 +439,22 @@ export default function MenusSettingsPage() {
       const updatedMenus = [...prev.menus];
       const menuItems = [...updatedMenus[menuIndex].items];
       
-      // Trocar a ordem dos itens
-      const temp = menuItems[itemIndex].order;
-      menuItems[itemIndex].order = menuItems[itemIndex + 1].order;
-      menuItems[itemIndex + 1].order = temp;
+      // Trocar os itens de posição no array
+      const temp = menuItems[itemIndex];
+      menuItems[itemIndex] = menuItems[itemIndex + 1];
+      menuItems[itemIndex + 1] = temp;
       
-      // Reordenar o array
-      menuItems.sort((a, b) => a.order - b.order);
+      // Garantir que todas as ordens sejam sequenciais
+      menuItems.forEach((item, idx) => {
+        item.order = idx;
+      });
       
       updatedMenus[menuIndex] = {
         ...updatedMenus[menuIndex],
         items: menuItems
       };
+      
+      console.log('Menu após mover para baixo:', updatedMenus[menuIndex]);
       
       return {
         ...prev,

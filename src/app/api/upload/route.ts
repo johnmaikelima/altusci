@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { writeFile } from 'fs/promises';
+import { writeFile, mkdir } from 'fs/promises';
 import { join } from 'path';
+import { existsSync } from 'fs';
 import { withAdminAuth } from '../users/middleware';
 
 // POST /api/upload - Upload de arquivos
@@ -56,13 +57,36 @@ export async function POST(request: NextRequest) {
       const publicDir = join(process.cwd(), 'public');
       const uploadPath = join(publicDir, uploadDir);
       
+      // Verificar se o diretório existe e criar se não existir
+      if (!existsSync(uploadPath)) {
+        try {
+          await mkdir(uploadPath, { recursive: true });
+          console.log(`Diretório criado: ${uploadPath}`);
+        } catch (err) {
+          console.error(`Erro ao criar diretório ${uploadPath}:`, err);
+          return NextResponse.json(
+            { error: 'Erro ao criar diretório de upload' },
+            { status: 500 }
+          );
+        }
+      }
+      
       // Converter o arquivo para um Buffer
       const bytes = await file.arrayBuffer();
       const buffer = Buffer.from(bytes);
       
       // Salvar o arquivo
       const filePath = join(uploadPath, fileName);
-      await writeFile(filePath, buffer);
+      try {
+        await writeFile(filePath, buffer);
+        console.log(`Arquivo salvo em: ${filePath}`);
+      } catch (err) {
+        console.error(`Erro ao salvar arquivo ${filePath}:`, err);
+        return NextResponse.json(
+          { error: 'Erro ao salvar arquivo' },
+          { status: 500 }
+        );
+      }
       
       // Retornar o caminho do arquivo
       const fileUrl = `/${uploadDir}/${fileName}`;

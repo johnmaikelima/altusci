@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/mongoose';
 import PostModel from '@/models/post';
 import mongoose from 'mongoose';
-import { generateSitemapXml } from '../sitemap/generate/route';
+import { updateSitemap } from '@/lib/sitemap-utils';
 
 interface MongooseDocument {
   _id: mongoose.Types.ObjectId;
@@ -136,10 +136,10 @@ export async function POST(request: Request) {
       category: populatedPost.category ? populatedPost.category.name : 'Sem categoria'
     };
     
-    // Gerar o sitemap automaticamente se o post for publicado
+    // Atualizar o sitemap automaticamente se o post for publicado
     if (populatedPost.published) {
       try {
-        await generateSitemapXml();
+        await updateSitemap();
         console.log('Sitemap atualizado após criação de novo post');
       } catch (sitemapError) {
         console.error('Erro ao atualizar sitemap:', sitemapError);

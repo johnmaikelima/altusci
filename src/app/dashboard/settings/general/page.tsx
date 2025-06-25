@@ -24,6 +24,14 @@ interface BlogSettings {
   contactPhone: string;
   contactWhatsapp: string;
   
+  // Configuração do botão WhatsApp
+  whatsappConfig: {
+    number: string;
+    message: string;
+    hoverText: string;
+    enabled: boolean;
+  };
+  
   // Endereço
   address: {
     street: string;
@@ -63,6 +71,12 @@ export default function GeneralSettingsPage() {
     contactEmail: '',
     contactPhone: '',
     contactWhatsapp: '',
+    whatsappConfig: {
+      number: '',
+      message: 'Olá! Vim pelo site e gostaria de algumas informações.',
+      hoverText: 'Precisa de ajuda? Fale conosco!',
+      enabled: false
+    },
     address: {
       street: '',
       number: '',
@@ -247,6 +261,50 @@ export default function GeneralSettingsPage() {
       address: {
         ...prev.address,
         [field]: value
+      }
+    }));
+  };
+
+  // Função para atualizar campos de configuração do WhatsApp
+  const handleWhatsappConfigChange = (
+    fieldOrEvent: string | React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
+    valueParam?: string
+  ) => {
+    // Verificar se é um evento ou um par campo/valor
+    if (typeof fieldOrEvent === 'string') {
+      // Caso direto: campo e valor passados como parâmetros
+      const field = fieldOrEvent;
+      const value = valueParam || '';
+      
+      setSettings(prev => ({
+        ...prev,
+        whatsappConfig: {
+          ...prev.whatsappConfig,
+          [field]: value
+        }
+      }));
+    } else {
+      // Caso de evento: extrair campo e valor do evento
+      const { name, value } = fieldOrEvent.target;
+      const field = name.split('.')[1]; // Exemplo: whatsappConfig.number -> number
+      
+      setSettings(prev => ({
+        ...prev,
+        whatsappConfig: {
+          ...prev.whatsappConfig,
+          [field]: value
+        }
+      }));
+    }
+  };
+
+  // Função para alternar a ativação do botão WhatsApp
+  const toggleWhatsappEnabled = () => {
+    setSettings(prev => ({
+      ...prev,
+      whatsappConfig: {
+        ...prev.whatsappConfig,
+        enabled: !prev.whatsappConfig.enabled
       }
     }));
   };
@@ -484,7 +542,7 @@ export default function GeneralSettingsPage() {
           <CardHeader>
             <CardTitle>Informações de Contato</CardTitle>
             <CardDescription>
-              Configure as informações de contato do seu blog
+              Configure os dados de contato exibidos no site
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -495,20 +553,20 @@ export default function GeneralSettingsPage() {
                 name="contactEmail"
                 value={settings.contactEmail}
                 onChange={handleInputChange}
-                placeholder="contato@seublog.com"
+                placeholder="contato@seusite.com"
               />
             </div>
             
             <div className="space-y-2">
               <Label htmlFor="contactPhone">Telefone de Contato</Label>
               <InputMask 
-                mask="(99) 99999-9999"
+                mask="(99) 9999-9999"
                 id="contactPhone"
                 name="contactPhone"
                 value={settings.contactPhone}
                 onChange={handleInputChange}
-                placeholder="(00) 00000-0000"
                 className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                placeholder="(00) 0000-0000"
               />
             </div>
             
@@ -520,9 +578,73 @@ export default function GeneralSettingsPage() {
                 name="contactWhatsapp"
                 value={settings.contactWhatsapp}
                 onChange={handleInputChange}
-                placeholder="(00) 00000-0000"
                 className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                placeholder="(00) 00000-0000"
               />
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card id="whatsapp">
+          <CardHeader>
+            <CardTitle>Botão Flutuante de WhatsApp</CardTitle>
+            <CardDescription>
+              Configure o botão de WhatsApp que aparecerá no canto inferior direito do site
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                id="whatsappEnabled"
+                checked={settings.whatsappConfig.enabled}
+                onChange={toggleWhatsappEnabled}
+                className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+              />
+              <Label htmlFor="whatsappEnabled">Ativar botão flutuante de WhatsApp</Label>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="whatsappNumber">Número do WhatsApp (com DDD)</Label>
+              <Input
+                id="whatsappNumber"
+                name="whatsappConfig.number"
+                value={settings.whatsappConfig.number}
+                onChange={handleWhatsappConfigChange}
+                placeholder="11999999999"
+                maxLength={20}
+              />
+              <p className="text-xs text-muted-foreground mt-1">Digite apenas números, incluindo o código do país (55) e DDD</p>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="whatsappMessage">Texto predefinido para envio</Label>
+              <textarea
+                id="whatsappMessage"
+                name="whatsappConfig.message"
+                value={settings.whatsappConfig.message}
+                onChange={handleWhatsappConfigChange}
+                className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                placeholder="Olá! Vim pelo site e gostaria de algumas informações."
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="whatsappHoverText">Texto ao passar o mouse</Label>
+              <Input
+                id="whatsappHoverText"
+                name="whatsappConfig.hoverText"
+                value={settings.whatsappConfig.hoverText}
+                onChange={handleWhatsappConfigChange}
+                placeholder="Precisa de ajuda? Fale conosco!"
+              />
+            </div>
+            
+            <div className="mt-4 p-4 bg-muted rounded-md">
+              <h4 className="font-medium mb-2">Prévia do link:</h4>
+              <p className="text-xs break-all">
+                https://api.whatsapp.com/send?phone=55{settings.whatsappConfig.number}&text={encodeURIComponent(settings.whatsappConfig.message)}
+              </p>
             </div>
           </CardContent>
         </Card>

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/mongoose';
 import CategoryModel from '@/models/category';
+import { updateSitemap } from '@/lib/sitemap-utils';
 
 export async function GET() {
   try {
@@ -46,6 +47,9 @@ export async function POST(req: NextRequest) {
     
     // Criar nova categoria
     const category = await CategoryModel.create(body);
+    
+    // Atualizar o sitemap após criar uma nova categoria
+    await updateSitemap();
     
     // Formatar a resposta para o frontend
     const formattedCategory = {

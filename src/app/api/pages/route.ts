@@ -3,6 +3,7 @@ import { connectToDatabase } from '@/lib/mongoose';
 import PageModel from '@/models/page';
 import { withAdminAuth } from '@/app/api/users/middleware';
 import { serializeMongoDBObject } from '@/lib/mongodb-helpers';
+import { updateSitemap } from '@/lib/sitemap-utils';
 
 // GET - Listar todas as páginas
 export async function GET(req: NextRequest) {
@@ -26,7 +27,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json(serializedPages);
   } catch (error) {
     console.error('Erro ao buscar páginas:', error);
-    return NextResponse.json({ error: 'Erro ao buscar páginas' }, { status: 500 });
+    return NextResponse.json({ error: 'Erro ao buscar páginas: ' + (error instanceof Error ? error.message : 'Erro desconhecido') }, { status: 500 });
   }
 }
 
@@ -49,6 +50,9 @@ export async function POST(req: NextRequest) {
       const page = new PageModel(data);
       await page.save();
       
+      // Atualizar o sitemap após criar uma nova página
+      await updateSitemap();
+      
       // Serializar o objeto do MongoDB antes de retornar
       const serializedPage = serializeMongoDBObject(page.toObject());
       
@@ -57,12 +61,12 @@ export async function POST(req: NextRequest) {
       console.error('Erro ao criar página:', error);
       
       // Verificar se é um erro de validação do Mongoose
-      if (error.name === 'ValidationError') {
+      if (error instanceof Error && error.name === 'ValidationError') {
         return NextResponse.json({ error: 'Dados inválidos', details: error.message }, { status: 400 });
       }
       
       // Verificar se é um erro de duplicidade (slug já existe)
-      if (error.code === 11000) {
+      if (error && typeof error === 'object' && 'code' in error && error.code === 11000) {
         return NextResponse.json({ error: 'Uma página com este slug já existe' }, { status: 409 });
       }
       

@@ -51,6 +51,22 @@ export async function PUT(request: NextRequest) {
       if (data.contactPhone !== undefined) settings.contactPhone = data.contactPhone;
       if (data.contactWhatsapp !== undefined) settings.contactWhatsapp = data.contactWhatsapp;
       
+      // Atualizar configuração do WhatsApp
+      if (data.whatsappConfig) {
+        if (!settings.whatsappConfig) {
+          settings.whatsappConfig = {
+            number: '',
+            message: 'Olá! Vim pelo site e gostaria de algumas informações.',
+            hoverText: 'Precisa de ajuda? Fale conosco!',
+            enabled: false
+          };
+        }
+        if (data.whatsappConfig.number !== undefined) settings.whatsappConfig.number = data.whatsappConfig.number;
+        if (data.whatsappConfig.message !== undefined) settings.whatsappConfig.message = data.whatsappConfig.message;
+        if (data.whatsappConfig.hoverText !== undefined) settings.whatsappConfig.hoverText = data.whatsappConfig.hoverText;
+        if (data.whatsappConfig.enabled !== undefined) settings.whatsappConfig.enabled = data.whatsappConfig.enabled;
+      }
+      
       // Atualizar página inicial
       if (data.homePage) {
         if (!settings.homePage) {
@@ -92,6 +108,53 @@ export async function PUT(request: NextRequest) {
       // Atualizar menus
       if (data.menus !== undefined) {
         settings.menus = data.menus;
+      }
+      
+      // Atualizar configurações SMTP
+      if (data.smtp) {
+        if (!settings.smtp) {
+          settings.smtp = {
+            host: '',
+            port: 587,
+            secure: false,
+            auth: {
+              user: '',
+              pass: ''
+            },
+            from: ''
+          };
+        }
+        if (data.smtp.host !== undefined) settings.smtp.host = data.smtp.host;
+        if (data.smtp.port !== undefined) settings.smtp.port = data.smtp.port;
+        if (data.smtp.secure !== undefined) settings.smtp.secure = data.smtp.secure;
+        if (data.smtp.from !== undefined) settings.smtp.from = data.smtp.from;
+        
+        // Atualizar autenticação SMTP
+        if (data.smtp.auth) {
+          if (!settings.smtp.auth) {
+            settings.smtp.auth = { user: '', pass: '' };
+          }
+          if (data.smtp.auth.user !== undefined) settings.smtp.auth.user = data.smtp.auth.user;
+          if (data.smtp.auth.pass !== undefined) settings.smtp.auth.pass = data.smtp.auth.pass;
+        }
+      }
+      
+      // Atualizar configurações do formulário de contato
+      if (data.contactForm) {
+        if (!settings.contactForm) {
+          settings.contactForm = {
+            enabled: true,
+            recipientEmail: '',
+            captchaEnabled: true,
+            successMessage: 'Sua mensagem foi enviada com sucesso! Entraremos em contato em breve.',
+            errorMessage: 'Ocorreu um erro ao enviar sua mensagem. Por favor, tente novamente.'
+          };
+        }
+        if (data.contactForm.enabled !== undefined) settings.contactForm.enabled = data.contactForm.enabled;
+        if (data.contactForm.recipientEmail !== undefined) settings.contactForm.recipientEmail = data.contactForm.recipientEmail;
+        if (data.contactForm.captchaEnabled !== undefined) settings.contactForm.captchaEnabled = data.contactForm.captchaEnabled;
+        if (data.contactForm.successMessage !== undefined) settings.contactForm.successMessage = data.contactForm.successMessage;
+        if (data.contactForm.errorMessage !== undefined) settings.contactForm.errorMessage = data.contactForm.errorMessage;
       }
       
       await settings.save();
