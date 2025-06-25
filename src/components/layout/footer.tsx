@@ -153,6 +153,33 @@ const Footer: React.FC<FooterProps> = ({ blogSettings }) => {
             </div>
           )}
 
+          {/* Links Úteis */}
+          <div>
+            <h3 className="text-lg font-semibold mb-4">Links Úteis</h3>
+            <ul className="space-y-2">
+              <li>
+                <Link href="/" className="text-gray-400 hover:text-white transition-colors">
+                  Home
+                </Link>
+              </li>
+              <li>
+                <Link href="/sobre" className="text-gray-400 hover:text-white transition-colors">
+                  Sobre
+                </Link>
+              </li>
+              <li>
+                <Link href="/blog" className="text-gray-400 hover:text-white transition-colors">
+                  Blog
+                </Link>
+              </li>
+              <li>
+                <Link href="/contato" className="text-gray-400 hover:text-white transition-colors">
+                  Contato
+                </Link>
+              </li>
+            </ul>
+          </div>
+
           {/* Contato */}
           <div>
             <h3 className="text-lg font-semibold mb-4">Entre em Contato</h3>
