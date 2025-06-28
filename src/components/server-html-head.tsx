@@ -1,4 +1,6 @@
-// Componente do lado do servidor para renderizar HTML no head
+"use client";
+
+// Componente para renderizar HTML no head
 import Script from 'next/script';
 import { parse } from 'node-html-parser';
 

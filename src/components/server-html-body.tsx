@@ -1,4 +1,6 @@
-// Componente do lado do servidor para renderizar HTML no body
+"use client";
+
+// Componente para renderizar HTML no body
 import Script from 'next/script';
 
 interface ServerHtmlBodyProps {
