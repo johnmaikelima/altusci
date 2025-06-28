@@ -1,100 +1,55 @@
-// Funções básicas de autenticação para uso nas rotas API
-import { cookies } from 'next/headers';
+import { NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
+import authOptions from './auth-options';
 
-/**
- * Verifica se o usuário está autenticado com base no token da requisição
- * @param req Objeto de requisição
- * @returns Boolean indicando se o usuário está autenticado
- */
-export async function isAuthenticated(req: Request): Promise<boolean> {
-  try {
-    // Verificar primeiro se há um token de autorização no cabeçalho
-    const authHeader = req.headers.get('authorization');
-    
-    if (authHeader && authHeader.startsWith('Bearer ')) {
-      const token = authHeader.split(' ')[1];
-      if (token) {
-        return true;
-      }
-    }
-    
-    // Se não houver token no cabeçalho, verificar cookies de sessão
-    // Isso permite que usuários logados no dashboard acessem as APIs
-    const cookieStore = cookies();
-    const sessionCookie = cookieStore.get('next-auth.session-token') || cookieStore.get('__Secure-next-auth.session-token');
-    
-    return !!sessionCookie;
-  } catch (error) {
-    console.error('Erro ao verificar autenticação:', error);
-    return false;
-  }
-}
-
-/**
- * Verifica se o usuário tem permissão de administrador
- * @param req Objeto de requisição
- * @returns Boolean indicando se o usuário é administrador
- */
-export async function isAdmin(req: Request): Promise<boolean> {
-  // Primeiro verificar se está autenticado
-  const authenticated = await isAuthenticated(req);
-  
-  if (!authenticated) {
-    return false;
-  }
-  
-  // Em uma implementação real, você verificaria o papel do usuário no token JWT
-  // Por enquanto, assumimos que todos os usuários autenticados são administradores
-  // Isso é seguro porque o acesso ao dashboard já é restrito a administradores
-  return true;
-}
-
-/**
- * Middleware para proteger rotas que requerem autenticação
- * @param handler Função manipuladora da rota
- * @returns Função manipuladora com verificação de autenticação
- */
-export function withAuth(handler: (req: Request) => Promise<Response>) {
+// Middleware para verificar se o usuário está autenticado
+export async function withAuth(handler: Function) {
   return async (req: Request) => {
-    const authenticated = await isAuthenticated(req);
-    
-    if (!authenticated) {
-      return new Response(JSON.stringify({ 
-        success: false, 
-        message: 'Não autorizado. Faça login para continuar.' 
-      }), {
-        status: 401,
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      });
+    const session = await getServerSession(authOptions);
+
+    if (!session?.user) {
+      return NextResponse.json(
+        { error: 'Não autorizado. Faça login para continuar.' },
+        { status: 401 }
+      );
     }
-    
-    return handler(req);
+
+    return handler(req, session);
   };
 }
 
-/**
- * Middleware para proteger rotas que requerem permissão de administrador
- * @param handler Função manipuladora da rota
- * @returns Função manipuladora com verificação de permissão de administrador
- */
-export function withAdminAuth(handler: (req: Request) => Promise<Response>) {
+// Middleware para verificar se o usuário é um administrador
+export async function withAdminAuth(handler: Function) {
   return async (req: Request) => {
-    const isUserAdmin = await isAdmin(req);
-    
-    if (!isUserAdmin) {
-      return new Response(JSON.stringify({ 
-        success: false, 
-        message: 'Acesso negado. Permissão de administrador necessária.' 
-      }), {
-        status: 403,
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      });
+    const session = await getServerSession(authOptions);
+
+    if (!session?.user) {
+      return NextResponse.json(
+        { error: 'Não autorizado. Faça login para continuar.' },
+        { status: 401 }
+      );
     }
-    
-    return handler(req);
+
+    // Verificar se o usuário tem a role de admin
+    if (session.user.role !== 'admin') {
+      return NextResponse.json(
+        { error: 'Acesso negado. Você não tem permissão para acessar este recurso.' },
+        { status: 403 }
+      );
+    }
+
+    return handler(req, session);
   };
+}
+
+// Função para verificar se o usuário está autenticado (para uso em componentes do servidor)
+export async function isAuthenticated() {
+  const session = await getServerSession(authOptions);
+  return !!session?.user;
+}
+
+// Função para verificar se o usuário é um administrador (para uso em componentes do servidor)
+export async function isAdmin() {
+  const session = await getServerSession(authOptions);
+  return session?.user?.role === 'admin';
 }

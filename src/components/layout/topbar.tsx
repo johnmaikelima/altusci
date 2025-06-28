@@ -1,51 +1,52 @@
 import { MapPin, Mail, Phone, Facebook, Twitter, Instagram, Linkedin, Youtube } from 'lucide-react';
-import { TopbarProps } from '@/types/layout-components';
 
-// Função auxiliar para verificar se há links de mídia social
-function hasSocialMediaLinks(socialMedia?: {
-  facebook?: string;
-  twitter?: string;
-  instagram?: string;
-  linkedin?: string;
-  youtube?: string;
-  [key: string]: any;
-}): boolean {
-  if (!socialMedia) return false;
-  
-  return Boolean(
-    socialMedia.facebook ||
-    socialMedia.twitter ||
-    socialMedia.instagram ||
-    socialMedia.linkedin ||
-    socialMedia.youtube
-  );
+// Interface para as configurações do blog
+interface BlogSettings {
+  name: string;
+  description: string;
+  logo?: string;
+  contactEmail?: string;
+  contactPhone?: string;
+  contactWhatsapp?: string;
+  address?: {
+    street: string;
+    number: string;
+    city: string;
+    state: string;
+    country: string;
+    zipCode: string;
+  };
+  socialMedia?: {
+    facebook: string;
+    twitter: string;
+    instagram: string;
+    linkedin: string;
+    youtube: string;
+  };
+  menus?: any[];
 }
 
-// Função auxiliar para verificar se há endereço
-function hasAddress(address?: {
-  street?: string;
-  number?: string;
-  city?: string;
-  state?: string;
-  country?: string;
-  zipCode?: string;
-  [key: string]: any;
-}): boolean {
-  if (!address) return false;
-  return Boolean(address.city || address.street);
+interface TopbarProps {
+  blogSettings?: BlogSettings;
 }
 
 // Componente do servidor para melhor SEO
 export default function Topbar({ blogSettings }: TopbarProps) {
   if (!blogSettings) return null;
   
-  // Verificar se há informações para exibir
-  const hasContactInfo = Boolean(blogSettings.contactEmail || blogSettings.contactPhone);
-  const hasAddressInfo = hasAddress(blogSettings.address);
-  const hasSocialMediaInfo = hasSocialMediaLinks(blogSettings.socialMedia);
+  // Verificar se há pelo menos uma informação de contato ou rede social para exibir
+  const hasContactInfo = blogSettings?.contactEmail || blogSettings?.contactPhone;
+  const hasAddress = blogSettings?.address && (blogSettings?.address?.city || blogSettings?.address?.street);
+  const hasSocialMedia = blogSettings?.socialMedia && (
+    blogSettings?.socialMedia?.facebook || 
+    blogSettings?.socialMedia?.twitter || 
+    blogSettings?.socialMedia?.instagram || 
+    blogSettings?.socialMedia?.linkedin || 
+    blogSettings?.socialMedia?.youtube
+  );
   
   // Se não houver configurações ou informações para exibir, não renderizar o topbar
-  if (!hasContactInfo && !hasAddressInfo && !hasSocialMediaInfo) {
+  if (!hasContactInfo && !hasAddress && !hasSocialMedia) {
     return null;
   }
   
@@ -75,11 +76,11 @@ export default function Topbar({ blogSettings }: TopbarProps) {
               </a>
             )}
             
-            {hasAddressInfo && blogSettings.address && (
+            {hasAddress && (
               <div className="flex items-center hover:text-blue-600 transition-colors">
                 <MapPin className="h-4 w-4 mr-1" />
                 <span>
-                  {blogSettings.address.street && (
+                  {blogSettings.address?.street && (
                     `${blogSettings.address.street}${blogSettings.address.number ? ', ' + blogSettings.address.number : ''} - ${blogSettings.address.city || ''}${blogSettings.address.state ? ', ' + blogSettings.address.state : ''}`
                   )}
                 </span>
@@ -88,9 +89,9 @@ export default function Topbar({ blogSettings }: TopbarProps) {
           </div>
           
           {/* Redes sociais */}
-          {hasSocialMediaInfo && blogSettings.socialMedia && (
+          {hasSocialMedia && (
             <div className="flex items-center space-x-3">
-              {blogSettings.socialMedia.facebook && (
+              {blogSettings.socialMedia?.facebook && (
                 <a 
                   href={blogSettings.socialMedia.facebook} 
                   target="_blank" 
@@ -102,7 +103,7 @@ export default function Topbar({ blogSettings }: TopbarProps) {
                 </a>
               )}
               
-              {blogSettings.socialMedia.twitter && (
+              {blogSettings.socialMedia?.twitter && (
                 <a 
                   href={blogSettings.socialMedia.twitter} 
                   target="_blank" 
@@ -114,7 +115,7 @@ export default function Topbar({ blogSettings }: TopbarProps) {
                 </a>
               )}
               
-              {blogSettings.socialMedia.instagram && (
+              {blogSettings.socialMedia?.instagram && (
                 <a 
                   href={blogSettings.socialMedia.instagram} 
                   target="_blank" 
@@ -126,7 +127,7 @@ export default function Topbar({ blogSettings }: TopbarProps) {
                 </a>
               )}
               
-              {blogSettings.socialMedia.linkedin && (
+              {blogSettings.socialMedia?.linkedin && (
                 <a 
                   href={blogSettings.socialMedia.linkedin} 
                   target="_blank" 
@@ -138,7 +139,7 @@ export default function Topbar({ blogSettings }: TopbarProps) {
                 </a>
               )}
               
-              {blogSettings.socialMedia.youtube && (
+              {blogSettings.socialMedia?.youtube && (
                 <a 
                   href={blogSettings.socialMedia.youtube} 
                   target="_blank" 

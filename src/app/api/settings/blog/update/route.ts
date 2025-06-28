@@ -1,9 +1,27 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/mongoose';
 import BlogSettingsModel from '@/models/blog-settings';
-import { withAdminAuth } from '@/lib/auth';
+import { getServerSession } from 'next-auth';
+import authOptions from '@/lib/auth-options';
 
-export const POST = withAdminAuth(async (req: Request) => {
+export async function POST(req: Request) {
+  // Verificar autenticação e permissões
+  const session = await getServerSession(authOptions);
+  
+  if (!session?.user) {
+    return NextResponse.json(
+      { error: 'Não autorizado. Faça login para continuar.' },
+      { status: 401 }
+    );
+  }
+  
+  // Verificar se o usuário tem a role de admin
+  if (session.user.role !== 'admin') {
+    return NextResponse.json(
+      { error: 'Acesso negado. Você não tem permissão para acessar este recurso.' },
+      { status: 403 }
+    );
+  }
   try {
     await connectToDatabase();
     
@@ -64,6 +82,13 @@ export const POST = withAdminAuth(async (req: Request) => {
         };
         break;
         
+      case 'customHtml':
+        blogSettings.customHtml = {
+          ...blogSettings.customHtml,
+          ...settings
+        };
+        break;
+        
       default:
         return NextResponse.json(
           { error: 'Seção inválida' },
@@ -85,4 +110,4 @@ export const POST = withAdminAuth(async (req: Request) => {
       { status: 500 }
     );
   }
-});
+}

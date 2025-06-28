@@ -1,5 +1,4 @@
 import mongoose, { Schema, Document } from 'mongoose';
-import { BlogSettings as IBlogSettings, SmtpSettings, ContactFormSettings } from '@/types/blog-settings';
 
 export interface MenuItem {
   name: string;
@@ -14,23 +13,40 @@ export interface Menu {
   items: MenuItem[];
 }
 
-export interface IBlogSettingsModel extends Document, Omit<IBlogSettings, '_id'> {
-  // Adicionando campos específicos do modelo que não estão na interface genérica
+export interface IBlogSettings extends Document {
+  name: string;
+  description: string;
   logo: string;
   favicon: string;
   defaultAuthorName: string;
   defaultAuthorEmail: string;
+  contactEmail: string;
+  contactPhone: string;
   contactWhatsapp: string;
+  customHtml?: {
+    head: string;
+    body: string;
+  };
   whatsappConfig: {
     number: string;
     message: string;
     hoverText: string;
     enabled: boolean;
   };
-  smtp: SmtpSettings & {
+  smtp: {
+    host: string;
+    port: number;
+    secure: boolean;
+    auth: {
+      user: string;
+      pass: string;
+    };
     from: string; // Email de origem para envio de mensagens
   };
-  contactForm: ContactFormSettings & {
+  contactForm: {
+    enabled: boolean;
+    recipientEmail: string;
+    captchaEnabled: boolean;
     successMessage: string;
     errorMessage: string;
   };
@@ -70,6 +86,16 @@ const BlogSettingsSchema: Schema = new Schema(
       trim: true,
       maxlength: [100, 'O nome não pode ter mais de 100 caracteres'],
       default: 'Meu Blog'
+    },
+    customHtml: {
+      head: {
+        type: String,
+        default: ''
+      },
+      body: {
+        type: String,
+        default: ''
+      }
     },
     whatsappConfig: {
       number: {
@@ -312,6 +338,4 @@ BlogSettingsSchema.statics.findOneOrCreate = async function() {
   return this.create({});
 };
 
-const BlogSettings = mongoose.models.BlogSettings || mongoose.model<IBlogSettingsModel>('BlogSettings', BlogSettingsSchema);
-
-export default BlogSettings;
+export default mongoose.models.BlogSettings || mongoose.model<IBlogSettings>('BlogSettings', BlogSettingsSchema);

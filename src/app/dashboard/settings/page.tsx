@@ -1,7 +1,7 @@
 'use client';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Palette, Settings, Globe, Bell, Shield, User, Menu, Image as ImageIcon, MessageCircle, Mail, MessageSquare, MapPin, Phone } from 'lucide-react';
+import { Palette, Settings, Globe, Bell, Shield, User, Menu, Image as ImageIcon, MessageCircle, Mail, MessageSquare, MapPin, Phone, Code } from 'lucide-react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 
@@ -14,6 +14,13 @@ type SettingCard = {
 };
 
 const settingsCards: SettingCard[] = [
+  {
+    title: 'HTML Personalizado',
+    description: 'Adicione códigos HTML personalizados ao seu site',
+    href: '/dashboard/settings/custom-html',
+    icon: <Code className="h-6 w-6" />,
+    color: 'bg-emerald-500/10 text-emerald-500',
+  },
   {
     title: 'Temas',
     description: 'Personalize a aparência do seu blog',
