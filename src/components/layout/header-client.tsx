@@ -34,6 +34,7 @@ export default function HeaderClient({ categories = [], blogSettings }: HeaderCl
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [localCategories, setLocalCategories] = useState<any[]>(categories);
+  const [isMobile, setIsMobile] = useState(false);
   const pathname = usePathname();
   
   // Encontrar o menu do cabeçalho
@@ -44,7 +45,7 @@ export default function HeaderClient({ categories = [], blogSettings }: HeaderCl
   // Desativar o menu de categorias
   const showCategoriesMenu = false;
 
-  // Efeito para detectar rolagem
+  // Efeito para detectar rolagem e tamanho da tela
   useEffect(() => {
     const handleScroll = () => {
       if (window.scrollY > 10) {
@@ -53,9 +54,23 @@ export default function HeaderClient({ categories = [], blogSettings }: HeaderCl
         setScrolled(false);
       }
     };
-
+    
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    
+    // Detectar tamanho inicial da tela
+    handleResize();
+    
+    // Adicionar event listeners
     window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
+    window.addEventListener('resize', handleResize);
+    
+    // Remover event listeners
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('resize', handleResize);
+    };
   }, []);
 
   // Buscar categorias se não forem fornecidas como props
@@ -81,9 +96,9 @@ export default function HeaderClient({ categories = [], blogSettings }: HeaderCl
 
   return (
     <header 
-      className={`fixed top-[32px] left-0 right-0 z-40 bg-white w-full transition-all duration-300 ${
+      className={`fixed left-0 right-0 z-40 bg-white w-full transition-all duration-300 ${
         scrolled ? 'shadow-md py-2' : 'py-4'
-      }`}
+      } ${isMobile ? 'top-0' : 'top-[32px]'}`}
     >
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between">

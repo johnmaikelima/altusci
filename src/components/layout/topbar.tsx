@@ -51,7 +51,7 @@ export default function Topbar({ blogSettings }: TopbarProps) {
   }
   
   return (
-    <div className="bg-gray-100 text-gray-700 py-2 border-b border-gray-200 fixed top-0 left-0 right-0 w-full z-50">
+    <div className="bg-gray-100 text-gray-700 py-2 border-b border-gray-200 fixed top-0 left-0 right-0 w-full z-50 hidden md:block">
       <div className="container mx-auto px-4">
         <div className="flex flex-col md:flex-row justify-between items-center text-sm">
           {/* Informações de contato e endereço */}

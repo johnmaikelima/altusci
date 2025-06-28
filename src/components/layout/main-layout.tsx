@@ -31,7 +31,7 @@ export default async function MainLayout({ children, categories = [] }: MainLayo
   return (
     <div className="flex flex-col min-h-screen bg-white">
       <Header categories={fetchedCategories} />
-      <main className="flex-grow pt-24 w-full">
+      <main className="flex-grow md:pt-32 pt-20 w-full">
         {children}
       </main>
       <Footer />
