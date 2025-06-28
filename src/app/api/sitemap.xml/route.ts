@@ -13,7 +13,25 @@ export async function GET() {
     await connectToDatabase();
     
     // Obter a URL base do site
-    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
+    // Verificar várias fontes para determinar a URL correta
+    let baseUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.VERCEL_URL || '';
+    
+    // Se estiver na Vercel, garantir que a URL esteja formatada corretamente
+    if (process.env.VERCEL_URL) {
+      baseUrl = `https://${process.env.VERCEL_URL}`;
+    }
+    
+    // Se estiver em produção com um domínio personalizado via VERCEL_ENV
+    if (process.env.VERCEL_ENV === 'production' && process.env.NEXT_PUBLIC_DOMAIN) {
+      baseUrl = `https://${process.env.NEXT_PUBLIC_DOMAIN}`;
+    }
+    
+    // Fallback para localhost apenas se nenhuma das opções acima estiver disponível
+    if (!baseUrl) {
+      baseUrl = 'http://localhost:3000';
+    }
+    
+    console.log('URL base para sitemap:', baseUrl);
     
     // Data atual para lastmod
     const now = new Date().toISOString();
