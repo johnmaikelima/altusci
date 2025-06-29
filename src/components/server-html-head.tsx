@@ -10,39 +10,81 @@ interface ServerHtmlHeadProps {
   rawHtml: string; // HTML bruto para renderização direta
 }
 
-// Função para extrair meta tags do HTML bruto
-function extractMetaTags(html: string): React.ReactNode[] {
+// Função para extrair elementos HTML e convertê-los para React nodes
+function extractHeadElements(html: string): React.ReactNode[] {
   if (!html) return [];
   
   try {
     const root = parse(html);
-    const metaTags = root.querySelectorAll('meta');
+    const elements: React.ReactNode[] = [];
     
-    return metaTags.map((tag, index) => {
+    // Extrair meta tags
+    const metaTags = root.querySelectorAll('meta');
+    metaTags.forEach((tag, index) => {
       const attrs: Record<string, string> = {};
-      
-      // Extrair todos os atributos da meta tag
       Object.entries(tag.attributes).forEach(([key, value]) => {
         attrs[key] = value as string;
       });
-      
-      // Renderizar a meta tag como um elemento React
-      return <meta key={`meta-${index}`} {...attrs} />;
+      elements.push(<meta key={`meta-${index}`} {...attrs} />);
     });
+    
+    // Extrair scripts
+    const scripts = root.querySelectorAll('script');
+    scripts.forEach((script, index) => {
+      const attrs: Record<string, string> = {};
+      Object.entries(script.attributes).forEach(([key, value]) => {
+        attrs[key] = value as string;
+      });
+      
+      // Usar o componente Script do Next.js para scripts externos
+      if (attrs.src) {
+        elements.push(
+          <Script 
+            key={`script-${index}`} 
+            src={attrs.src} 
+            strategy="beforeInteractive"
+            {...attrs} 
+          />
+        );
+      } else if (script.textContent) {
+        // Para scripts inline
+        elements.push(
+          <Script 
+            key={`script-inline-${index}`} 
+            id={`custom-script-${index}`}
+            strategy="beforeInteractive"
+            dangerouslySetInnerHTML={{ __html: script.textContent }}
+            {...attrs}
+          />
+        );
+      }
+    });
+    
+    // Extrair links (CSS, favicon, etc)
+    const links = root.querySelectorAll('link');
+    links.forEach((link, index) => {
+      const attrs: Record<string, string> = {};
+      Object.entries(link.attributes).forEach(([key, value]) => {
+        attrs[key] = value as string;
+      });
+      elements.push(<link key={`link-${index}`} {...attrs} />);
+    });
+    
+    return elements;
   } catch (error) {
-    console.error('Erro ao extrair meta tags:', error);
+    console.error('Erro ao extrair elementos do head:', error);
     return [];
   }
 }
 
 export function ServerHtmlHead({ metaTags, scripts, rawHtml }: ServerHtmlHeadProps) {
-  // Extrair meta tags para renderização direta
-  const metaElements = extractMetaTags(rawHtml);
+  // Extrair elementos do head para renderização direta
+  const headElements = extractHeadElements(rawHtml);
   
   return (
     <>
-      {/* Renderizar meta tags diretamente */}
-      {metaElements}
+      {/* Renderizar elementos do head diretamente */}
+      {headElements}
       
       {/* Renderizar outros elementos do head usando um script */}
       {metaTags && (
