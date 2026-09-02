@@ -107,6 +107,7 @@
                     <h3 class="condition__title">Avaliação Presencial</h3>
                     <p class="condition__description">
                         Agende uma visita para vender mais de 10 notebooks. Faremos a avaliação in loco para conferir o lote.
+                        Tem outros equipamentos? Veja também <a href="/compramos-lote-de-informatica" class="contact-link">compramos lote de informática</a>.
                     </p>
                 </div>
 

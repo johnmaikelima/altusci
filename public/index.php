@@ -27,6 +27,11 @@ $routes = [
     'GET /servicos'                     => 'PublicController@servicos',
     'GET /contato'                      => 'PublicController@contato',
     'GET /compramos-seu-notebook-usado' => 'PublicController@compramosNotebook',
+    'GET /compramos-lote-de-informatica' => 'PublicController@compramosLoteInformatica',
+    'GET /compramos-notebooks-usados'   => 'PublicController@compraNotebooksUsados',
+    'GET /compramos-computadores-usados' => 'PublicController@compraComputadoresUsados',
+    'GET /compramos-equipamentos-de-informatica-de-empresas' => 'PublicController@compraEquipamentosEmpresas',
+    'GET /compramos-servidores-usados'  => 'PublicController@compraServidoresUsados',
     'GET /como-criar-um-pendrive-bootavel-do-mac-no-windows' => 'PublicController@pendriveBootavel',
 
     // Blog público

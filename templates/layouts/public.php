@@ -58,8 +58,21 @@ $_adsense = get_setting('adsense_code', 'ca-pub-2935633410371712');
                     <li class="nav__item">
                         <a href="/servicos" class="nav__link <?= ($currentPage ?? '') === 'servicos' ? 'active' : '' ?>">Serviços</a>
                     </li>
-                    <li class="nav__item">
-                        <a href="/compramos-seu-notebook-usado" class="nav__link <?= ($currentPage ?? '') === 'compramos' ? 'active' : '' ?>">Compramos seu Notebook</a>
+                    <li class="nav__item nav__item--dropdown">
+                        <a href="/compramos-lote-de-informatica" class="nav__link <?= ($currentPage ?? '') === 'compramos' || ($currentPage ?? '') === 'compramos-lote' ? 'active' : '' ?>">
+                            Compramos
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="dropdown-icon">
+                                <polyline points="6 9 12 15 18 9"></polyline>
+                            </svg>
+                        </a>
+                        <ul class="nav__dropdown">
+                            <li><a href="/compramos-lote-de-informatica">Lote de Informática</a></li>
+                            <li><a href="/compramos-notebooks-usados">Notebooks Usados</a></li>
+                            <li><a href="/compramos-computadores-usados">Computadores Usados</a></li>
+                            <li><a href="/compramos-servidores-usados">Servidores Usados</a></li>
+                            <li><a href="/compramos-equipamentos-de-informatica-de-empresas">Equipamentos de Empresas</a></li>
+                            <li><a href="/compramos-seu-notebook-usado">Seu Notebook (1 unidade)</a></li>
+                        </ul>
                     </li>
                     <li class="nav__item">
                         <a href="/blog" class="nav__link <?= ($currentPage ?? '') === 'blog' ? 'active' : '' ?>">Blog</a>
@@ -105,7 +118,7 @@ $_adsense = get_setting('adsense_code', 'ca-pub-2935633410371712');
     <!-- Footer -->
     <footer class="footer">
         <div class="container">
-            <div class="footer__grid">
+            <div class="footer__grid" style="grid-template-columns: 1.8fr 1fr 1.2fr 1fr 1.3fr;">
                 <div class="footer__column">
                     <a href="/" class="footer__logo">
                         <img src="<?= e($_logo) ?>" alt="Altustec Logo" class="logo-img">
@@ -144,9 +157,21 @@ $_adsense = get_setting('adsense_code', 'ca-pub-2935633410371712');
                     <ul class="footer__links">
                         <li><a href="/">Início</a></li>
                         <li><a href="/servicos">Serviços</a></li>
-                        <li><a href="/compramos-seu-notebook-usado">Compramos seu Notebook</a></li>
                         <li><a href="/blog">Blog</a></li>
                         <li><a href="/contato">Contato</a></li>
+                        <li><a href="/politica-de-privacidade">Privacidade</a></li>
+                    </ul>
+                </div>
+
+                <div class="footer__column">
+                    <h3 class="footer__title">Compra de Equipamentos</h3>
+                    <ul class="footer__links">
+                        <li><a href="/compramos-lote-de-informatica">Compramos Lote de Informática</a></li>
+                        <li><a href="/compramos-notebooks-usados">Notebooks Usados</a></li>
+                        <li><a href="/compramos-computadores-usados">Computadores Usados</a></li>
+                        <li><a href="/compramos-servidores-usados">Servidores Usados</a></li>
+                        <li><a href="/compramos-equipamentos-de-informatica-de-empresas">Equipamentos de Empresas</a></li>
+                        <li><a href="/compramos-seu-notebook-usado">Compramos seu Notebook</a></li>
                     </ul>
                 </div>
 
